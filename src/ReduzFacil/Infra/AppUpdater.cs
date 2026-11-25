@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http;
 using ReduzFacil.Core.Update;
 using ReduzFacil.Core.Util;
 
