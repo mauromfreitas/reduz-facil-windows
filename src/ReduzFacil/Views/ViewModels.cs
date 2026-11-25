@@ -133,6 +133,8 @@ public sealed class HitVm(ScanHit hit) : Observable
     public string Saving => $"−{Hit.SavingPercent}% (~{Format.Bytes(Hit.SavingBytes)})";
     public string Detail => Hit.Detail + " · " + Hit.Modified.ToString("dd/MM/yyyy");
 
+    public void Refresh() => RaiseAll();
+
     public QueueItem? Queued { get; set; }
 
     public bool Selected

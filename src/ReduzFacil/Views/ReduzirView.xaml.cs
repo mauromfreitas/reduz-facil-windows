@@ -30,6 +30,7 @@ public partial class ReduzirView : UserControl
 
         _s.Queue.ListChanged += () => Dispatcher.BeginInvoke(SyncList);
         _s.Queue.ItemChanged += i => Dispatcher.BeginInvoke(() => OnItemChanged(i));
+        Infra.ThemeManager.Changed += () => { foreach (var vm in _items) vm.Refresh(); };
         SyncList();
     }
 

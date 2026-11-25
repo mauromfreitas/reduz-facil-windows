@@ -29,6 +29,11 @@ public partial class PesoView : UserControl
         MinText.Text = Format.Number(_s.Settings.ScanMinMb);
         BuildQuick();
         _s.Queue.ItemChanged += i => Dispatcher.BeginInvoke(() => OnQueueItem(i));
+        ThemeManager.Changed += () =>
+        {
+            foreach (var h in _hits) h.Refresh();
+            DupList.Items.Refresh();
+        };
         UpdateSelection();
     }
 

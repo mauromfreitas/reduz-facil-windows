@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+
+- Trocar o tema com o app aberto atualiza na hora também os ícones coloridos das listas.
+
 ## 1.1.1
 
 - Tema escuro: nomes dos arquivos nas listas (fila, Onde está o peso, Histórico) ficavam escuros demais para ler.

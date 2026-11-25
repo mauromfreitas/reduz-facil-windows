@@ -33,6 +33,9 @@ public static class ThemeManager
 
     public static bool IsDark { get; private set; }
 
+    /// <summary>Depois de trocar o tema (as listas recarregam as cores dos ícones).</summary>
+    public static event Action? Changed;
+
     /// <summary>"claro", "escuro" ou "sistema".</summary>
     public static void Apply(string mode)
     {
@@ -52,6 +55,7 @@ public static class ThemeManager
             res[key] = b;
         }
         foreach (Window w in Application.Current.Windows) TitleBar(w);
+        Changed?.Invoke();
         if (!_listening)
         {
             _listening = true;

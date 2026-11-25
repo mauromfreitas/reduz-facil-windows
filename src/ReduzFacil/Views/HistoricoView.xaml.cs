@@ -13,6 +13,7 @@ public partial class HistoricoView : UserControl
         _s = services;
         InitializeComponent();
         _s.History.Changed += () => Dispatcher.BeginInvoke(() => { if (IsVisible) Reload(); });
+        Infra.ThemeManager.Changed += () => { if (IsVisible) Reload(); };
     }
 
     public void Reload()
