@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.2
+
+- **Mapa do disco:** os maiores arquivos de cada pasta (até 20, a partir de 5 MB) aparecem como blocos próprios;
+  os pequenos ficam agrupados. Clique num arquivo para reduzir na hora, abrir ou mostrar no Explorer.
+
 ## 1.2.1
 
 - **Início:** nova primeira tela com o espaço livre de cada disco, o total economizado (desde sempre e no mês)

@@ -516,7 +516,7 @@ public partial class PesoView : UserControl
                 Cursor = node.IsFolder && node.Children.Count > 0 ? System.Windows.Input.Cursors.Hand : System.Windows.Input.Cursors.Arrow,
                 ToolTip = $"{node.Name}\n{Format.Bytes(node.Size)} · {node.Files:N0} arquivo(s)\n" +
                           string.Join("  ", MapColors.Where(c => node.ByKind[(int)c.Kind] > 0).Select(c => $"{c.Label}: {Format.Bytes(node.ByKind[(int)c.Kind])}")),
-                Opacity = node.IsFolder ? 0.92 : 0.6,
+                Opacity = node.IsFolder ? 0.92 : node.IsFile ? 0.8 : 0.55,
             };
             if (r.W > 70 && r.H > 34)
             {
@@ -526,14 +526,41 @@ public partial class PesoView : UserControl
                 block.Child = sp;
             }
             var target = node;
+            if (node.IsFile) block.Cursor = System.Windows.Input.Cursors.Hand;
             block.MouseLeftButtonUp += (_, _) =>
             {
                 if (target.IsFolder && target.Children.Count > 0) ShowMapNode(target);
+                else if (target.IsFile) ShowFileMenu(block, target);
             };
             Canvas.SetLeft(block, r.X + 1);
             Canvas.SetTop(block, r.Y + 1);
             MapCanvas.Children.Add(block);
         }
+    }
+
+    /// <summary>Clique num arquivo do mapa: reduzir na hora ou mostrar no Explorer.</summary>
+    private void ShowFileMenu(FrameworkElement anchor, MapNode file)
+    {
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint };
+        var canReduce = Core.Model.FileTypes.KindOf(file.Path) is not null;
+        var reduce = new MenuItem { Header = canReduce ? $"Reduzir este arquivo ({Format.Bytes(file.Size)})" : "Este tipo de arquivo não é reduzido pelo app", IsEnabled = canReduce };
+        reduce.Click += (_, _) =>
+        {
+            var item = _s.Queue.Add(file.Path, _s.CurrentOptions(), null, JobOrigin.Scan);
+            if (item is null) return;
+            _batch.RemoveAll(i => i.IsFinished);
+            _batch.Add(item);
+            _s.Queue.Schedule();
+            _main.Toast($"Reduzindo {file.Name}… Acompanhe na tela Reduzir.");
+        };
+        var show = new MenuItem { Header = "Mostrar no Explorer" };
+        show.Click += (_, _) => Explorer.ShowInFolder(file.Path);
+        var open = new MenuItem { Header = "Abrir" };
+        open.Click += (_, _) => Explorer.Open(file.Path);
+        menu.Items.Add(reduce);
+        menu.Items.Add(open);
+        menu.Items.Add(show);
+        menu.IsOpen = true;
     }
 
     private void OnMapUp(object sender, RoutedEventArgs e)

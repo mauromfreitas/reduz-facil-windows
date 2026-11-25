@@ -8,9 +8,11 @@ public enum MapKind { Fotos, Videos, Audios, Pdfs, Outros }
 /// <summary>Uma pasta (ou o grupo "arquivos soltos") no mapa do disco.</summary>
 public sealed class MapNode
 {
-    public required string Name { get; init; }
+    public required string Name { get; set; }
     public required string Path { get; init; }
     public bool IsFolder { get; init; }
+    /// <summary>Um arquivo grande mostrado como bloco próprio.</summary>
+    public bool IsFile { get; init; }
     public long Size { get; set; }
     public long[] ByKind { get; } = new long[5];
     public int Files { get; set; }
@@ -82,17 +84,29 @@ public static class DiskMapper
         ct.ThrowIfCancellationRequested();
         st.Folders++;
         st.Tick(node.Path);
-        var loose = new MapNode { Name = "(arquivos desta pasta)", Path = node.Path, IsFolder = false, Parent = node };
+        var loose = new MapNode { Name = "", Path = node.Path, IsFolder = false, Parent = node };
+        // Os maiores arquivos (até 20 por pasta, a partir de 5 MB) viram blocos próprios; o resto fica agrupado.
+        var big = new List<(FileInfo File, long Len)>();
         try
         {
             foreach (var f in new DirectoryInfo(node.Path).EnumerateFiles("*", Opts))
             {
                 long len;
                 try { len = f.Length; } catch { continue; }
-                loose.Size += len;
-                loose.ByKind[(int)MapNode.KindOf(f.Name)] += len;
-                loose.Files++;
                 st.Bytes += len;
+                if (len >= BigFileBytes)
+                {
+                    big.Add((f, len));
+                    if (big.Count > MaxFilesPerFolder)
+                    {
+                        // tira o menor da lista e manda para o grupo
+                        var min = big.MinBy(b => b.Len);
+                        big.Remove(min);
+                        AddLoose(loose, min.File.Name, min.Len);
+                    }
+                    continue;
+                }
+                AddLoose(loose, f.Name, len);
             }
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException)
@@ -110,7 +124,19 @@ public static class DiskMapper
             if (child.Size == 0) continue;
             node.Children.Add(child);
         }
-        if (loose.Size > 0) node.Children.Add(loose);
+        foreach (var (f, len) in big)
+        {
+            var fn = new MapNode { Name = f.Name, Path = f.FullName, IsFolder = false, IsFile = true, Parent = node, Size = len, Files = 1 };
+            fn.ByKind[(int)MapNode.KindOf(f.Name)] = len;
+            node.Children.Add(fn);
+        }
+        if (loose.Size > 0)
+        {
+            loose.Name = big.Count == 0 && node.Children.Count == 0
+                ? $"({loose.Files} arquivo(s))"
+                : $"(outros {loose.Files} arquivo(s) menores)";
+            node.Children.Add(loose);
+        }
         foreach (var c in node.Children)
         {
             node.Size += c.Size;
@@ -118,6 +144,16 @@ public static class DiskMapper
             for (var i = 0; i < 5; i++) node.ByKind[i] += c.ByKind[i];
         }
         node.Children.Sort((a, b) => b.Size.CompareTo(a.Size));
+    }
+
+    public const long BigFileBytes = 5L * 1024 * 1024;
+    public const int MaxFilesPerFolder = 20;
+
+    private static void AddLoose(MapNode loose, string name, long len)
+    {
+        loose.Size += len;
+        loose.ByKind[(int)MapNode.KindOf(name)] += len;
+        loose.Files++;
     }
 
     private static string DisplayName(string full)

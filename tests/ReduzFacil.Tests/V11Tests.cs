@@ -144,7 +144,9 @@ public static class V121Tests
         Assert.Equal("Videos", map.Children[0].Name, "maior primeiro");
         Assert.Equal(MapKind.Videos, map.Children[0].Dominant, "cor de vídeo");
         Assert.Equal(MapKind.Fotos, map.Children[1].Dominant, "cor de foto");
-        Assert.True(map.Children.Any(c => !c.IsFolder && c.Size == 1000), "arquivos soltos agrupados");
+        Assert.True(map.Children.Any(c => !c.IsFolder && !c.IsFile && c.Size == 1000), "arquivos pequenos agrupados");
+        var videos = map.Children[0];
+        Assert.True(videos.Children.Count == 1 && videos.Children[0] is { IsFile: true, Name: "a.mp4" }, "vídeo grande vira bloco próprio");
 
         var sizes = new double[] { 50, 25, 12, 8, 3, 1, 1 };
         var rects = Treemap.Layout(sizes, s => s, new MapRect(0, 0, 400, 300));
