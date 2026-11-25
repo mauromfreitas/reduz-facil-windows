@@ -312,7 +312,7 @@ public partial class ConfigView : UserControl
             var found = await App.Instance.CheckForUpdateAsync(manual: true);
             UpdateStatus.Text = found
                 ? $"Versão {App.Instance.Updater.Available!.Version} disponível: use \"Atualizar\" na faixa verde lá em cima."
-                : $"Você já tem a versão mais nova ({AppInfo.Version}) — ou não deu para falar com o GitHub agora.";
+                : $"Você já tem a versão mais nova ({AppInfo.Version}).";
         }
         finally
         {

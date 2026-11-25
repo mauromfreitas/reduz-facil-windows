@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+
+- "Procurar agora": mensagem mais simples quando já está na versão mais nova.
+
 ## 1.1.2
 
 - Trocar o tema com o app aberto atualiza na hora também os ícones coloridos das listas.
