@@ -32,6 +32,10 @@
                     <RadioButton x:Name="LvlMax" Style="{StaticResource Chip}" GroupName="lvl" Content="Máxima qualidade" Checked="OnLevel" />
                     <RadioButton x:Name="LvlEq" Style="{StaticResource Chip}" GroupName="lvl" Content="Equilibrado" Checked="OnLevel" />
                     <RadioButton x:Name="LvlMin" Style="{StaticResource Chip}" GroupName="lvl" Content="Menor tamanho" Checked="OnLevel" />
+                    <StackPanel x:Name="DiscordBox" Orientation="Horizontal" Margin="12,0,0,8" VerticalAlignment="Center">
+                        <TextBlock Text="Plano do Discord:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Muted}" />
+                        <ComboBox x:Name="DiscordBox2" SelectionChanged="OnDiscordPlan" />
+                    </StackPanel>
                     <StackPanel x:Name="MetaBox" Orientation="Horizontal" Margin="12,0,0,8" VerticalAlignment="Center">
                         <TextBlock Text="Meta:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Muted}" />
                         <TextBox x:Name="MetaText" Width="70" TextChanged="OnMetaChanged" />

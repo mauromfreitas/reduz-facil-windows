@@ -19,6 +19,7 @@ public static class WindowsIntegration
     [
         ("qualidade", "Por qualidade"),
         ("whatsapp", "Para WhatsApp (16 MB)"),
+        ("discord", "Para Discord"),
         ("email", "Para e-mail (18 MB)"),
         ("gov", "Para gov.br e portais (2 MB)"),
         ("enem", "Para Enem e concursos (1 MB)"),

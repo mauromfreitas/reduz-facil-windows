@@ -25,6 +25,7 @@ public partial class ReduzirView : UserControl
         _s = services;
         _main = main;
         InitializeComponent();
+        foreach (var (mb, label) in Preset.DiscordPlans) DiscordBox2.Items.Add(new ComboBoxItem { Content = label, Tag = mb });
         QueueList.ItemsSource = _items;
         LoadFromSettings();
 
@@ -59,6 +60,7 @@ public partial class ReduzirView : UserControl
             PrivacyCheck.IsChecked = o.RemoveMetadata;
             AutoStartCheck.IsChecked = st.AutoStart;
             SplitCheck.IsChecked = st.SplitVideos;
+            DiscordBox2.SelectedItem = DiscordBox2.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (int)i.Tag == st.DiscordMb) ?? DiscordBox2.Items[0];
             UpdatePresetUi();
         }
         finally
@@ -89,7 +91,8 @@ public partial class ReduzirView : UserControl
         {
             var rb = new RadioButton
             {
-                Content = p.TargetMb is { } mb ? $"{p.Label} · {mb} MB" : p.Label,
+                Content = p.Id == Preset.Discord ? $"{p.Label} · {_s.Settings.DiscordMb} MB"
+                    : p.TargetMb is { } mb ? $"{p.Label} · {mb} MB" : p.Label,
                 Style = (Style)FindResource("Chip"),
                 GroupName = "preset",
                 Tag = p.Id,
@@ -143,8 +146,18 @@ public partial class ReduzirView : UserControl
         var p = Preset.Find(_s.Settings.PresetId) ?? Preset.BuiltIn[0];
         PresetHint.Text = p.Hint + (p.TargetMb is not null ? ". Arquivos que já cabem são só otimizados." : "");
         MetaBox.Visibility = p.Id == Preset.Meta ? Visibility.Visible : Visibility.Collapsed;
+        DiscordBox.Visibility = p.Id == Preset.Discord ? Visibility.Visible : Visibility.Collapsed;
         SplitCheck.Visibility = p.TargetMb is not null || p.Id == Preset.Meta ? Visibility.Visible : Visibility.Collapsed;
         LevelRow.Visibility = p.ConvertOnly ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnDiscordPlan(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || DiscordBox2.SelectedItem is not ComboBoxItem { Tag: int mb }) return;
+        _s.Settings.DiscordMb = mb;
+        _s.Save();
+        foreach (var rb in PresetPanel.Children.OfType<RadioButton>())
+            if (rb.Tag as string == Preset.Discord) rb.Content = $"Discord · {mb} MB";
     }
 
     private void OnSplit(object sender, RoutedEventArgs e)

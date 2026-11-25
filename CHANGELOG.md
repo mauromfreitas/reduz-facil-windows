@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+- **Atalho Discord:** cabe no limite de envio do Discord e sai em MP4 H.264 (toca direto no chat). Escolha o plano:
+  Grátis · 20 MB (padrão), Nitro Basic · 50 MB ou Nitro · 500 MB. Também no botão direito do Explorer, nas pastas
+  vigiadas e nos perfis; funciona com "dividir vídeo longo em partes".
+- **"Começar sozinho" vem desligado:** os arquivos esperam o botão Iniciar, para dar tempo de conferir os ajustes
+  (pasta vigiada e Ctrl+V continuam começando sozinhos).
+
 ## 1.1.3
 
 - "Procurar agora": mensagem mais simples quando já está na versão mais nova.

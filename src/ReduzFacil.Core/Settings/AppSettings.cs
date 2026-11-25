@@ -26,7 +26,7 @@ public sealed class WatchSettings
 
 public sealed class AppSettings
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
 
     public OutputSettings Output { get; set; } = new();
 
@@ -35,7 +35,11 @@ public sealed class AppSettings
     public string PresetId { get; set; } = Preset.Qualidade;
     public double CustomTargetMb { get; set; } = 5;
 
-    public bool AutoStart { get; set; } = true;
+    /// <summary>Desligado por padrão: o usuário confere os ajustes e aperta Iniciar.</summary>
+    public bool AutoStart { get; set; }
+
+    /// <summary>Plano do Discord em MB por arquivo (20 grátis, 50 Nitro Basic, 500 Nitro).</summary>
+    public int DiscordMb { get; set; } = 20;
 
     /// <summary>Com meta (WhatsApp, e-mail…): vídeo longo é dividido em partes do tamanho da meta em vez de perder qualidade.</summary>
     public bool SplitVideos { get; set; }
@@ -74,6 +78,13 @@ public sealed class AppSettings
         var o = profile is not null
             ? Build(profile.Options, profile.PresetId, profile.TargetMb)
             : Build(Options, presetOrProfile ?? PresetId, customMb ?? CustomTargetMb);
+        var presetId = profile?.PresetId ?? presetOrProfile ?? PresetId;
+        if (string.Equals(presetId, Preset.Discord, StringComparison.OrdinalIgnoreCase))
+        {
+            // Plano escolhido; em bytes "decimais" (o menor dos dois jeitos de contar MB) para nunca passar.
+            o.TargetBytes = DiscordMb * 1_000_000L;
+            o.VideoCodec = VideoCodec.H264; // o Discord só toca H.264 direto no chat
+        }
         if (SplitVideos && o.TargetBytes is { } t) o.SplitPartBytes = t;
         return o;
     }
@@ -159,6 +170,13 @@ public sealed class SettingsStore(string path)
         s.OthersAtOnce = Math.Clamp(s.OthersAtOnce, 1, 16);
         s.ScanMinMb = Math.Clamp(s.ScanMinMb, 0.1, 10_000);
         if (s.CustomTargetMb <= 0) s.CustomTargetMb = 5;
+        if (s.DiscordMb is not (20 or 50 or 500)) s.DiscordMb = 20;
+        if (s.Version < 2)
+        {
+            // 1.2: "Começar sozinho" passa a vir desligado (dá tempo de conferir os ajustes).
+            s.AutoStart = false;
+            s.Version = 2;
+        }
         if (Preset.Find(s.PresetId) is null) s.PresetId = Preset.Qualidade;
         // Ajustes por arquivo nunca ficam salvos como padrão.
         s.Options.TrimStart = s.Options.TrimEnd = null;
