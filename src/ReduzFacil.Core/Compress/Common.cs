@@ -63,6 +63,11 @@ public sealed class EngineOutput
     public string? EngineNote { get; init; }
     /// <summary>Guardar mesmo se ficar maior que o original (conversões pedidas).</summary>
     public bool KeepEvenIfBigger { get; init; }
+
+    /// <summary>Nada a fazer (ex.: "Converter" num arquivo que já está num formato compatível). TempPath fica vazio.</summary>
+    public string? NothingToDo { get; init; }
+
+    public static EngineOutput Nothing(string why) => new() { TempPath = "", Extension = "", NothingToDo = why };
 }
 
 public interface IKindCompressor

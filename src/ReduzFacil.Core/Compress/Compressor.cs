@@ -34,8 +34,21 @@ public sealed class Compressor(CompressContext ctx)
         var originalDate = src.LastWriteTimeUtc;
 
         using var job = new JobScope(ctx.Tools, inputPath, progress, ct);
-        var result = await For(kind).CompressAsync(ctx, job, o).ConfigureAwait(false);
+        var result = o.ConvertOnly && kind == FileKind.Pdf
+            ? EngineOutput.Nothing("PDF não precisa de conversão: o original foi mantido.")
+            : o.ConvertOnly && kind == FileKind.Audio && FileTypes.Ext(inputPath) == "mp3"
+                ? EngineOutput.Nothing("Já é MP3 (abre em tudo): o original foi mantido.")
+                : await For(kind).CompressAsync(ctx, job, o).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
+
+        if (result.NothingToDo is { } why)
+        {
+            job.Report(1);
+            return new CompressResult
+            {
+                InputPath = inputPath, OriginalBytes = originalSize, FinalBytes = originalSize, KeptOriginal = true, Warnings = [why],
+            };
+        }
 
         var outSize = new FileInfo(result.TempPath).Length;
         var warnings = new List<string>(result.Warnings);
@@ -54,13 +67,27 @@ public sealed class Compressor(CompressContext ctx)
         }
         if (bigger) warnings.Add("O arquivo convertido ficou maior que o original (o formato novo ocupa mais espaço).");
 
+        // 1) Copia para a pasta de destino com um nome oculto e temporário (pode demorar se for outro disco).
+        // 2) Só então escolhe o nome final e renomeia (instantâneo): o arquivo aparece completo, sem sobrescrever nada.
+        var destDir = Path.GetDirectoryName(OutputNamer.Decide(output, inputPath, result.Extension, sourceRoot))!;
+        Directory.CreateDirectory(destDir);
+        var staging = Path.Combine(destDir, "." + Guid.NewGuid().ToString("N")[..10] + ".reduzindo");
         string final;
-        lock (NameGate)
+        try
         {
-            final = OutputNamer.Decide(output, inputPath, result.Extension, sourceRoot);
-            Directory.CreateDirectory(Path.GetDirectoryName(final)!);
-            // Move de dentro da pasta de trabalho: o arquivo só aparece no destino quando está completo.
-            File.Move(result.TempPath, final);
+            File.Move(result.TempPath, staging);
+            try { File.SetAttributes(staging, File.GetAttributes(staging) | FileAttributes.Hidden); } catch { /* opcional */ }
+            lock (NameGate)
+            {
+                final = OutputNamer.Decide(output, inputPath, result.Extension, sourceRoot);
+                File.Move(staging, final);
+            }
+            try { File.SetAttributes(final, File.GetAttributes(final) & ~FileAttributes.Hidden); } catch { /* opcional */ }
+        }
+        catch
+        {
+            try { if (File.Exists(staging)) File.Delete(staging); } catch { /* best effort */ }
+            throw;
         }
         try
         {

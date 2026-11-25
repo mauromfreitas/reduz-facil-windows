@@ -23,6 +23,8 @@ public sealed class QueueItem
     public long SizeBytes { get; init; }
 
     public JobStatus Status { get; internal set; }
+    /// <summary>Pode começar (com "Começar sozinho" desligado, só depois do Iniciar).</summary>
+    public bool Released { get; internal set; }
     public double Progress { get; internal set; }
     public CompressResult? Result { get; internal set; }
     public string? Error { get; internal set; }
@@ -60,8 +62,6 @@ public sealed class JobQueue
     /// <summary>Começa sozinho quando um arquivo entra. Desligado: só com <see cref="StartAll"/>.</summary>
     public bool AutoStart { get; set; } = true;
 
-    private bool _started;
-
     public PauseGate Pause => _compressor.Context.Pause;
     public bool IsPaused => Pause.IsPaused;
 
@@ -97,18 +97,30 @@ public sealed class JobQueue
         {
             var existing = _items.FirstOrDefault(i => !i.IsFinished && SamePath(i.Path, full));
             if (existing is not null) return existing;
-            item = new QueueItem { Path = full, Kind = kind.Value, Options = options.Clone(), SourceRoot = sourceRoot, Origin = origin, SizeBytes = size };
+            // Pasta vigiada sempre começa sozinha (ninguém está olhando para apertar Iniciar).
+            item = new QueueItem
+            {
+                Path = full, Kind = kind.Value, Options = options.Clone(), SourceRoot = sourceRoot, Origin = origin, SizeBytes = size,
+                Released = AutoStart || origin == JobOrigin.Watch,
+            };
             _items.Add(item);
-            if (AutoStart) _started = true;
         }
         ListChanged?.Invoke();
         Schedule();
         return item;
     }
 
+    /// <summary>Há arquivos esperando o botão Iniciar.</summary>
+    public bool HasUnreleased
+    {
+        get { lock (_gate) return _items.Any(i => i.Status == JobStatus.Waiting && !i.Released); }
+    }
+
     public void StartAll()
     {
-        lock (_gate) _started = true;
+        lock (_gate)
+            foreach (var i in _items)
+                if (i.Status == JobStatus.Waiting) i.Released = true;
         if (IsPaused) Pause.Resume();
         Schedule();
     }
@@ -184,7 +196,7 @@ public sealed class JobQueue
             item.Progress = 0;
             item.Error = null;
             item.Result = null;
-            _started = true;
+            item.Released = true;
         }
         ItemChanged?.Invoke(item);
         Schedule();
@@ -195,10 +207,10 @@ public sealed class JobQueue
         var toStart = new List<QueueItem>();
         lock (_gate)
         {
-            if (!_started || Pause.IsPaused) return;
+            if (Pause.IsPaused) return;
             foreach (var i in _items)
             {
-                if (i.Status != JobStatus.Waiting) continue;
+                if (i.Status != JobStatus.Waiting || !i.Released) continue;
                 if (i.IsHeavy)
                 {
                     if (_runningHeavy >= Math.Max(1, HeavyLimit)) continue;

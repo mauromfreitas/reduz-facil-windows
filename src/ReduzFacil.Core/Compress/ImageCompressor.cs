@@ -127,7 +127,7 @@ public sealed class ImageCompressor : IKindCompressor
     {
         var a = new List<string> { "-quiet", job.InputPath + "[0]", "-auto-orient" };
         // Privacidade: tira EXIF (GPS, câmera), XMP e IPTC; mantém o perfil de cor para as cores não mudarem.
-        if (o.RemoveMetadata) a.AddRange(["+profile", "!icc,*", "-set", "comment", ""]);
+        if (o.RemoveMetadata) a.AddRange(["+profile", "!icc,*", "+set", "comment"]);
         if (side < longSide) a.AddRange(["-filter", "Lanczos", "-resize", $"{side}x{side}>"]);
         switch (ext)
         {

@@ -280,7 +280,7 @@ public partial class ReduzirView : UserControl
 
         PauseBtn.Content = _s.Queue.IsPaused ? "Continuar" : "Pausar";
         PauseBtn.IsEnabled = running + waiting > 0 || _s.Queue.IsPaused;
-        StartBtn.Visibility = !_s.Settings.AutoStart && waiting > 0 && running == 0 ? Visibility.Visible : Visibility.Collapsed;
+        StartBtn.Visibility = _s.Queue.HasUnreleased ? Visibility.Visible : Visibility.Collapsed;
         CancelAllBtn.IsEnabled = running + waiting > 0;
         ClearBtn.IsEnabled = items.Any(i => i.IsFinished);
         DropSub.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;

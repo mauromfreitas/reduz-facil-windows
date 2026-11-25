@@ -16,6 +16,7 @@ public partial class App : Application
     private MainWindow? _window;
     private TrayIcon? _tray;
     private bool _exiting;
+    private readonly HashSet<long> _notified = [];
 
     public SmokeOptions? Smoke { get; }
     public AppServices Services { get; private set; } = null!;
@@ -131,7 +132,9 @@ public partial class App : Application
     private void OnQueueIdle()
     {
         if (_window is null || !Services.Settings.NotifyWhenDone) return;
-        var finished = Services.Queue.Items.Where(i => i.IsFinished && i.Result is not null).ToList();
+        // Só o que terminou desde o último aviso.
+        var finished = Services.Queue.Items.Where(i => i.IsFinished && i.Result is not null && !_notified.Contains(i.Id)).ToList();
+        foreach (var i in finished) _notified.Add(i.Id);
         if (finished.Count == 0) return;
         if (_window.IsVisible && _window.IsActive) return;
         var saved = finished.Sum(i => i.Result!.KeptOriginal ? 0 : Math.Max(0, i.Result.OriginalBytes - i.Result.FinalBytes));

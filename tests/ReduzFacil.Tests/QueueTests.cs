@@ -103,6 +103,13 @@ public static class QueueTests
         q.Retry(bad);
         await WaitIdle(q, TimeSpan.FromMinutes(1));
         Assert.Equal(JobStatus.Failed, bad.Status, "falhou de novo (esperado)");
+        var later = q.Add(Env.F(Fixtures.Alpha), new CompressOptions())!;
+        await Task.Delay(500);
+        Assert.True(later.Status == JobStatus.Waiting && q.HasUnreleased, "depois do Iniciar, o próximo também espera o Iniciar");
+        var watched = q.Add(Env.F(Fixtures.TinyPng), new CompressOptions(), null, JobOrigin.Watch)!;
+        await Task.Delay(300);
+        Assert.True(watched.Released, "pasta vigiada começa sozinha");
+        q.CancelAll();
     }
 
     [Teste("coletor: pasta arrastada pula saídas nossas, temporários e ocultos")]
@@ -276,5 +283,25 @@ public static class PreviewTests
             Assert.True(heic.BeforeImage.EndsWith(".png"), "HEIC vira PNG para a tela");
         }
         PreviewMaker.Clean(Env.Work);
+    }
+}
+
+public static class ConverterTests
+{
+    [Teste("converter: PDF, MP3 e MP4 H.264 já compatíveis ficam como estão")]
+    public static async Task JaCompativeis()
+    {
+        var c = new Compressor(Env.NewContext());
+        var dir = Env.NewOut("converter-compat");
+        var o = new OutputSettings { Mode = OutputMode.Folder, Folder = dir };
+        var opts = new CompressOptions { ConvertOnly = true };
+        var pdf = await c.RunAsync(Env.F(Fixtures.Scanned), opts, o);
+        var mp4 = await c.RunAsync(Env.F(Fixtures.Rotated), opts, o);
+        Assert.True(pdf.KeptOriginal && pdf.Warnings[0].Contains("PDF"), "PDF mantido");
+        Assert.True(mp4.KeptOriginal && mp4.Warnings[0].Contains("MP4"), "MP4 mantido");
+        var mp3src = await c.RunAsync(Env.F(Fixtures.Wav), new CompressOptions(), o);
+        var mp3 = await c.RunAsync(mp3src.OutputPath!, opts, o);
+        Assert.True(mp3.KeptOriginal, "MP3 mantido");
+        Assert.Equal(1, Directory.GetFiles(dir).Length, "só o MP3 da primeira etapa foi criado");
     }
 }

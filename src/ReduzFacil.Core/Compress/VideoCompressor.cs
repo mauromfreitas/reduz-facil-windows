@@ -16,7 +16,11 @@ public sealed class VideoCompressor : IKindCompressor
             if (!info.HasAudio) throw new UserFacingException("Este vídeo não tem som para extrair.");
             return await new AudioCompressor().CompressProbedAsync(ctx, job, o, info, fromVideo: true).ConfigureAwait(false);
         }
-        if (o.RemoveAudio && !info.HasVideo) throw new UserFacingException("Este arquivo só tem som.");
+
+        // "Converter" num MP4 H.264 comum: já abre em tudo, não há o que converter.
+        if (o.ConvertOnly && !o.HasVideoEdits && FileTypes.Ext(job.InputPath) is "mp4" or "m4v" && info.VideoCodec == "h264"
+            && !info.IsHdr && (!info.HasAudio || info.AudioCodec is "aac" or "mp3"))
+            return EngineOutput.Nothing("Já é MP4 (H.264) e abre em tudo: o original foi mantido.");
 
         var opts = o.Clone();
         var originalSize = new FileInfo(job.InputPath).Length;

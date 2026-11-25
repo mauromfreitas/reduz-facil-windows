@@ -45,7 +45,8 @@ public sealed class SingleInstance : IDisposable
     /// <summary>Manda os argumentos para a instância aberta. Tenta por até ~10 s (ela pode estar abrindo).</summary>
     public static bool SendToExisting(string[] args)
     {
-        var payload = JsonSerializer.Serialize(args.Length == 0 ? ["--mostrar"] : args);
+        string[] toSend = args.Length == 0 ? new[] { "--mostrar" } : args;
+        var payload = JsonSerializer.Serialize(toSend);
         var until = DateTime.UtcNow.AddSeconds(10);
         while (DateTime.UtcNow < until)
         {

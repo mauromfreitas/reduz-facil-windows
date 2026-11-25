@@ -50,6 +50,9 @@ public sealed class AppServices : IDisposable
 
     public void Save() => _store.Save(Settings);
 
+    /// <summary>Sufixo que realmente vai no nome (ao lado do original ele nunca fica vazio).</summary>
+    public string EffectiveSuffix => string.IsNullOrWhiteSpace(Settings.Output.Suffix) ? "-reduzido" : Settings.Output.Suffix.Trim();
+
     public void ApplyQueueSettings()
     {
         Queue.HeavyLimit = Settings.VideosAtOnce;
@@ -67,7 +70,7 @@ public sealed class AppServices : IDisposable
     /// <summary>Coloca arquivos e pastas na fila. Devolve quantos entraram.</summary>
     public int Enqueue(IEnumerable<string> paths, CompressOptions options, JobOrigin origin = JobOrigin.Manual)
     {
-        var found = FileCollector.Collect(paths, Settings.Output.Suffix);
+        var found = FileCollector.Collect(paths, EffectiveSuffix);
         var n = 0;
         foreach (var f in found)
             if (Queue.Add(f.Path, options, f.SourceRoot, origin) is not null) n++;
@@ -93,9 +96,13 @@ public sealed class AppServices : IDisposable
         {
             try
             {
-                var outDir = Settings.Output.Mode == OutputMode.Folder ? Settings.Output.Folder : null;
-                _watcher = new FolderWatcher(w.Folder, w.IncludeSubfolders, OnWatchedFile, () => Settings.Output.Suffix,
-                    p => outDir is not null && p.StartsWith(Path.GetFullPath(outDir) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+                var outDir = Settings.Output.Mode == OutputMode.Folder && !string.IsNullOrWhiteSpace(Settings.Output.Folder)
+                    ? Path.GetFullPath(Settings.Output.Folder) : null;
+                // Saída na própria pasta vigiada: quem evita o laço é o sufixo (ignorar a pasta inteira desligaria tudo).
+                if (outDir is not null && string.Equals(outDir.TrimEnd('\\'), Path.GetFullPath(w.Folder).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    outDir = null;
+                _watcher = new FolderWatcher(w.Folder, w.IncludeSubfolders, OnWatchedFile, () => EffectiveSuffix,
+                    p => outDir is not null && p.StartsWith(outDir.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
                 _watcher.Start();
             }
             catch (Exception ex)

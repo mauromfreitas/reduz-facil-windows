@@ -309,7 +309,8 @@ public sealed class CompareWindow : Window
     {
         try
         {
-            var pm = new PreviewMaker(s.Compressor.Context);
+            // Contexto próprio: a prévia funciona mesmo com a fila pausada.
+            var pm = new PreviewMaker(new CompressContext { Tools = s.Tools, Hardware = s.Hardware });
             var r = await Task.Run(() => pm.MakeAsync(input, options, output, _cts.Token));
             _left.Source = Load(r.BeforeImage);
             _right.Source = Load(r.AfterImage);
