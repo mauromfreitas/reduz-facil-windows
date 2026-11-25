@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- **Nova página Manutenção** (para não precisar mais do CCleaner):
+  - **Programas:** acha versões novas pelo winget (instalador oficial da Microsoft) e atualiza tudo ou só os marcados.
+  - **Drivers:** procura no Windows Update (só os validados pela Microsoft) e instala tudo ou só os marcados.
+  - **Limpeza:** Lixeira, temporários, cache dos navegadores, miniaturas, sobras do Windows Update e relatórios de erro, mostrando quanto cada um ocupa antes de apagar.
+  - **Abrem com o Windows:** liga e desliga programas da inicialização, do mesmo jeito que o Gerenciador de Tarefas.
+  - **Atalhos** para as telas do Windows (Windows Update, Sensor de Armazenamento, Aplicativos instalados…).
+  - Itens do sistema pedem permissão de administrador só na hora em que são usados.
+
 ## 1.2.2
 
 - **Mapa do disco:** os maiores arquivos de cada pasta (até 20, a partir de 5 MB) aparecem como blocos próprios;

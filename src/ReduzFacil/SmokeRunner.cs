@@ -242,6 +242,13 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
         await Task.Delay(4000);
         await Shot(shots, "16-inicio");
 
+        // Manutenção: só procura e mede (não instala nem apaga nada no teste)
+        window.ShowPage("manutencao");
+        await Task.WhenAny(Task.WhenAll(window.Manutencao.AppsTask, window.Manutencao.CleanTask), Task.Delay(TimeSpan.FromMinutes(3)));
+        await Task.WhenAny(window.Manutencao.DriversTask, Task.Delay(TimeSpan.FromSeconds(60)));
+        Log.Info($"TESTE manutenção: programas={window.Manutencao.AppsTask.Status} drivers={window.Manutencao.DriversTask.Status}");
+        await Shot(shots, "17-manutencao");
+
         // Tema escuro
         ThemeManager.Apply("escuro");
         window.ShowReduzir();

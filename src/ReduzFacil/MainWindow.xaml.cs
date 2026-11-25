@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     public ReduzirView Reduzir { get; }
     public PesoView Peso { get; }
     public FerramentasView Ferramentas { get; }
+    public ManutencaoView Manutencao { get; }
     public HistoricoView Historico { get; }
     public ConfigView Config { get; }
 
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
         Reduzir = new ReduzirView(services, this);
         Peso = new PesoView(services, this);
         Ferramentas = new FerramentasView(services, this);
+        Manutencao = new ManutencaoView(services, this);
         Historico = new HistoricoView(services, this);
         Config = new ConfigView(services, this);
         Home = new HomeView(services, this);
@@ -83,6 +85,7 @@ public partial class MainWindow : Window
             case "inicio": NavInicio.IsChecked = true; break;
             case "peso": NavPeso.IsChecked = true; break;
             case "ferramentas": NavFerramentas.IsChecked = true; break;
+            case "manutencao": NavManutencao.IsChecked = true; break;
             case "historico": NavHistorico.IsChecked = true; break;
             case "config": NavConfig.IsChecked = true; break;
             default: NavReduzir.IsChecked = true; break;
@@ -95,10 +98,12 @@ public partial class MainWindow : Window
         Host.Content = sender == NavInicio ? Home
             : sender == NavPeso ? Peso
             : sender == NavFerramentas ? Ferramentas
+            : sender == NavManutencao ? Manutencao
             : sender == NavHistorico ? Historico
             : sender == NavConfig ? Config
             : Reduzir;
         if (Host.Content == Home) Home.Reload();
+        if (Host.Content == Manutencao) Manutencao.Reload();
         if (Host.Content == Historico) Historico.Reload();
         if (Host.Content == Config) Config.Reload();
     }

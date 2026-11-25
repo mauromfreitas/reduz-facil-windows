@@ -1,0 +1,83 @@
+<UserControl x:Class="ReduzFacil.Views.ManutencaoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <TextBlock Text="Manutenção" Style="{StaticResource H1}" />
+            <TextBlock Text="Atualizações, limpeza e o que abre com o Windows, tudo num lugar só." Style="{StaticResource MutedText}" Margin="0,0,0,14" />
+
+            <!-- Programas -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button x:Name="AppsCheckBtn" DockPanel.Dock="Right" Content="↻  Procurar de novo" Style="{StaticResource Small}" Click="OnAppsCheck" />
+                        <TextBlock Text="📦  Programas" Style="{StaticResource H2}" />
+                    </DockPanel>
+                    <TextBlock x:Name="AppsStatus" Style="{StaticResource MutedText}" TextWrapping="Wrap" />
+                    <StackPanel x:Name="AppsList" Margin="0,8,0,0" />
+                    <StackPanel x:Name="AppsButtons" Orientation="Horizontal" Margin="0,12,0,0" Visibility="Collapsed">
+                        <Button x:Name="AppsAllBtn" Content="Atualizar tudo" Style="{StaticResource Primary}" Click="OnAppsAll" />
+                        <Button x:Name="AppsSelBtn" Content="Atualizar marcados" Click="OnAppsSelected" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Drivers -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button x:Name="DrvCheckBtn" DockPanel.Dock="Right" Content="↻  Procurar de novo" Style="{StaticResource Small}" Click="OnDrvCheck" />
+                        <TextBlock Text="🧩  Drivers" Style="{StaticResource H2}" />
+                    </DockPanel>
+                    <TextBlock x:Name="DrvStatus" Style="{StaticResource MutedText}" TextWrapping="Wrap" />
+                    <StackPanel x:Name="DrvList" Margin="0,8,0,0" />
+                    <StackPanel x:Name="DrvButtons" Orientation="Horizontal" Margin="0,12,0,0" Visibility="Collapsed">
+                        <Button x:Name="DrvAllBtn" Content="Instalar tudo" Style="{StaticResource Primary}" Click="OnDrvAll" />
+                        <Button x:Name="DrvSelBtn" Content="Instalar marcados" Click="OnDrvSelected" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,12,0,0" FontSize="12"
+                               Text="Vêm do Windows Update, só os que a Microsoft já testou. Placa de vídeo (NVIDIA, AMD, Intel): o Windows Update costuma trazer versões mais antigas; para jogos, prefira o app do fabricante (NVIDIA App, AMD Adrenalin ou Intel Driver &amp; Support Assistant)." />
+                </StackPanel>
+            </Border>
+
+            <!-- Limpeza -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="🧹  Limpeza" Style="{StaticResource H2}" />
+                    <TextBlock x:Name="CleanStatus" Style="{StaticResource MutedText}" TextWrapping="Wrap" />
+                    <StackPanel x:Name="CleanList" Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button x:Name="CleanBtn" Content="Limpar marcados" Style="{StaticResource Primary}" Click="OnClean" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Inicialização -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="🚀  Abrem com o Windows" Style="{StaticResource H2}" />
+                    <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                               Text="Desmarque o que não precisa abrir sozinho: o computador liga mais rápido. Nada é desinstalado e dá para marcar de novo quando quiser." />
+                    <StackPanel x:Name="StartupList" Margin="0,8,0,0" />
+                    <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="12"
+                               Text="Apps da Microsoft Store aparecem só no Gerenciador de Tarefas (botão abaixo)." />
+                </StackPanel>
+            </Border>
+
+            <!-- Atalhos -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="🪟  Atalhos do Windows" Style="{StaticResource H2}" />
+                    <WrapPanel>
+                        <Button Content="Windows Update" Tag="ms-settings:windowsupdate" Click="OnShortcut" Margin="0,4,8,4" />
+                        <Button Content="Sensor de Armazenamento" Tag="ms-settings:storagesense" Click="OnShortcut" Margin="0,4,8,4" />
+                        <Button Content="Aplicativos instalados" Tag="ms-settings:appsfeatures" Click="OnShortcut" Margin="0,4,8,4" />
+                        <Button Content="Aplicativos de inicialização" Tag="ms-settings:startupapps" Click="OnShortcut" Margin="0,4,8,4" />
+                        <Button Content="Gerenciador de Tarefas" Tag="taskmgr.exe" Click="OnShortcut" Margin="0,4,8,4" />
+                        <Button Content="Limpeza de Disco" Tag="cleanmgr.exe" Click="OnShortcut" Margin="0,4,8,4" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

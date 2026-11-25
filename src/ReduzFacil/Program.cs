@@ -14,6 +14,10 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Ajudante com permissão de administrador (Manutenção): faz a tarefa e fecha, sem tela.
+        if (args.Length >= 2 && args[0].Equals("--admin", StringComparison.OrdinalIgnoreCase))
+            return AdminTasks.RunHelper(args[1]);
+
         var smoke = SmokeOptions.Parse(args);
 
         // Aberto pela versão anterior depois de uma atualização: espera ela fechar de vez.

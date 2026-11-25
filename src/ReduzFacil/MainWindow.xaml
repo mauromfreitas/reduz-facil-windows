@@ -34,6 +34,9 @@
                 <RadioButton x:Name="NavFerramentas" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
                     <TextBlock Text="🧰  Ferramentas de PDF" />
                 </RadioButton>
+                <RadioButton x:Name="NavManutencao" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
+                    <TextBlock Text="🛠  Manutenção" />
+                </RadioButton>
                 <RadioButton x:Name="NavHistorico" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
                     <TextBlock Text="🕘  Histórico" />
                 </RadioButton>

@@ -49,4 +49,28 @@ public static class RecycleBin
         }
         return n;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SHQUERYRBINFO
+    {
+        public int cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin(string? pszRootPath, ref SHQUERYRBINFO info);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? pszRootPath, uint flags);
+
+    /// <summary>Tamanho e quantidade de itens na Lixeira (todos os discos).</summary>
+    public static (long Bytes, long Items) Query()
+    {
+        var info = new SHQUERYRBINFO { cbSize = Marshal.SizeOf<SHQUERYRBINFO>() };
+        return SHQueryRecycleBin(null, ref info) == 0 ? (info.i64Size, info.i64NumItems) : (0, 0);
+    }
+
+    /// <summary>Esvazia a Lixeira de todos os discos, sem perguntar (o app já perguntou).</summary>
+    public static void Empty() => SHEmptyRecycleBin(IntPtr.Zero, null, 0x1 | 0x2 | 0x4);
 }
