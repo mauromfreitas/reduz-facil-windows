@@ -74,11 +74,11 @@ public static class FileCollector
         }
     }
 
-    /// <summary>"foto-reduzido.jpg" e "foto-reduzido (2).jpg" são saídas nossas: não entram de novo.</summary>
+    /// <summary>"foto-reduzido.jpg", "foto-reduzido (2).jpg" e "video-reduzido-parte2.mp4" são saídas nossas: não entram de novo.</summary>
     public static bool IsOwnOutput(string path, string? suffix)
     {
         if (string.IsNullOrWhiteSpace(suffix)) return false;
         var stem = Path.GetFileNameWithoutExtension(path);
-        return Regex.IsMatch(stem, Regex.Escape(suffix.Trim()) + @"( \(\d+\))?$", RegexOptions.IgnoreCase);
+        return Regex.IsMatch(stem, Regex.Escape(suffix.Trim()) + @"(-parte\d+)?( \(\d+\))?$", RegexOptions.IgnoreCase);
     }
 }

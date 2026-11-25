@@ -45,7 +45,20 @@ public sealed class AppSettings
     public bool TrayOnClose { get; set; } = true;
     public bool NotifyWhenDone { get; set; } = true;
 
-    public WatchSettings Watch { get; set; } = new();
+    /// <summary>Pastas vigiadas (cada uma com o seu perfil).</summary>
+    public List<WatchSettings> Watches { get; set; } = [];
+
+    /// <summary>Formato antigo (1.0, uma pasta só): lido e convertido para <see cref="Watches"/>.</summary>
+    public WatchSettings? Watch { get; set; }
+
+    /// <summary>"claro", "escuro" ou "sistema" (igual ao Windows).</summary>
+    public string Theme { get; set; } = "sistema";
+
+    public bool CheckUpdates { get; set; } = true;
+    public string? SkippedVersion { get; set; }
+
+    /// <summary>O resultado de um print colado (Ctrl+V) vai direto para a área de transferência.</summary>
+    public bool CopyPastedResult { get; set; } = true;
     public List<SavedProfile> Profiles { get; set; } = [];
 
     public double ScanMinMb { get; set; } = 1;
@@ -65,6 +78,7 @@ public sealed class AppSettings
         o.TrimStart = o.TrimEnd = null;
         o.Rotate = 0;
         o.RemoveAudio = o.ExtractAudioOnly = false;
+        o.SplitPartBytes = null;
         var preset = Preset.Find(presetId) ?? Preset.BuiltIn[0];
         o.ConvertOnly = preset.ConvertOnly;
         o.TargetBytes = preset.Id switch
@@ -128,7 +142,11 @@ public sealed class SettingsStore(string path)
     {
         s.Output ??= new OutputSettings();
         s.Options ??= new CompressOptions();
-        s.Watch ??= new WatchSettings();
+        s.Watches ??= [];
+        if (s.Watch is { Folder: not null } old && s.Watches.Count == 0) s.Watches.Add(old);
+        s.Watch = null;
+        s.Watches.RemoveAll(w => w is null);
+        if (s.Theme is not ("claro" or "escuro" or "sistema")) s.Theme = "sistema";
         s.Profiles ??= [];
         s.Output.Suffix ??= "-reduzido";
         s.VideosAtOnce = Math.Clamp(s.VideosAtOnce, 1, 4);
@@ -140,6 +158,7 @@ public sealed class SettingsStore(string path)
         s.Options.TrimStart = s.Options.TrimEnd = null;
         s.Options.Rotate = 0;
         s.Options.RemoveAudio = s.Options.ExtractAudioOnly = false;
+        s.Options.SplitPartBytes = null;
         s.Options.TargetBytes = null;
         s.Options.ConvertOnly = false;
     }

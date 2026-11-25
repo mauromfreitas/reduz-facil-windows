@@ -67,6 +67,8 @@ public sealed class CompressOptions
     public int Rotate { get; set; }
     public bool RemoveAudio { get; set; }
     public bool ExtractAudioOnly { get; set; }
+    /// <summary>Dividir o vídeo em partes de até este tamanho (ex.: 16 MB para o WhatsApp). Null = não dividir.</summary>
+    public long? SplitPartBytes { get; set; }
 
     public CompressOptions Clone()
     {
@@ -75,7 +77,7 @@ public sealed class CompressOptions
     }
 
     [JsonIgnore]
-    public bool HasVideoEdits => TrimStart is not null || TrimEnd is not null || Rotate != 0 || RemoveAudio || ExtractAudioOnly;
+    public bool HasVideoEdits => TrimStart is not null || TrimEnd is not null || Rotate != 0 || RemoveAudio || ExtractAudioOnly || SplitPartBytes is > 0;
 }
 
 /// <summary>Resultado de um arquivo.</summary>
@@ -86,6 +88,11 @@ public sealed class CompressResult
 
     /// <summary>Arquivo gerado (null quando o original foi mantido).</summary>
     public string? OutputPath { get; init; }
+
+    /// <summary>Demais arquivos gerados (partes 2, 3… de um vídeo dividido).</summary>
+    public List<string> ExtraOutputs { get; init; } = [];
+
+    public IEnumerable<string> AllOutputs => OutputPath is null ? ExtraOutputs : new[] { OutputPath }.Concat(ExtraOutputs);
     public long FinalBytes { get; init; }
 
     /// <summary>Não houve ganho: nenhum arquivo novo foi gerado.</summary>

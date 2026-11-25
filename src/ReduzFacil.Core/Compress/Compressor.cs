@@ -33,6 +33,9 @@ public sealed class Compressor(CompressContext ctx)
         var originalSize = src.Length;
         var originalDate = src.LastWriteTimeUtc;
 
+        if (kind == FileKind.Video && o.SplitPartBytes is > 0 && !o.ExtractAudioOnly)
+            return await SplitVideoAsync(inputPath, o, output, sourceRoot, progress, ct).ConfigureAwait(false);
+
         using var job = new JobScope(ctx.Tools, inputPath, progress, ct);
         var result = o.ConvertOnly && kind == FileKind.Pdf
             ? EngineOutput.Nothing("PDF não precisa de conversão: o original foi mantido.")
@@ -104,6 +107,97 @@ public sealed class Compressor(CompressContext ctx)
         {
             InputPath = inputPath, OriginalBytes = originalSize, OutputPath = final, FinalBytes = outSize,
             Warnings = warnings, EngineNote = result.EngineNote,
+        };
+    }
+
+    // ---------------- dividir vídeo em partes ----------------
+
+    /// <summary>
+    /// Quantas partes: o mínimo que deixa cada parte com bitrate suficiente para ficar nítida
+    /// na resolução de saída (no máximo 720p, que é o que o WhatsApp mostra).
+    /// </summary>
+    public static int PartsFor(Media.MediaInfo info, CompressOptions o, double durationSec, long partBytes)
+    {
+        var level = o.Level;
+        var cap = o.VideoMaxShortSide > 0 ? o.VideoMaxShortSide : 720;
+        var shortSide = Math.Min(Math.Min(info.Width, info.Height), cap);
+        if (shortSide <= 0) shortSide = cap;
+        var levelFactor = level switch { Level.Maxima => 1.0, Level.Equilibrado => 0.7, _ => 0.5 };
+        var codecFactor = o.VideoCodec == VideoCodec.H265 ? 0.6 : 1.0;
+        var good = Scan.WeightScanner.TypicalVideoBps(shortSide) * levelFactor * codecFactor;
+        for (var n = 1; n <= 500; n++)
+        {
+            var partDur = durationSec / n;
+            if (partDur < 5) return Math.Max(1, n - 1);
+            long vbps;
+            try { (vbps, _) = VideoPlanner.BitrateForTarget(partBytes, partDur, info.HasAudio && !o.RemoveAudio); }
+            catch (UserFacingException) { continue; }
+            if (vbps >= good) return n;
+        }
+        return 500;
+    }
+
+    private async Task<CompressResult> SplitVideoAsync(string inputPath, CompressOptions o, OutputSettings output, string? sourceRoot,
+        Action<double>? progress, CancellationToken ct)
+    {
+        var info = await Media.MediaProbe.ProbeAsync(ctx.Tools, inputPath, ct).ConfigureAwait(false);
+        var (start, dur) = VideoPlanner.TrimWindow(info, o);
+        var partBytes = o.SplitPartBytes!.Value;
+        var originalSize = new FileInfo(inputPath).Length;
+        var n = PartsFor(info, o, dur, partBytes);
+
+        // Cabe numa parte só: vira uma redução normal com meta.
+        if (n == 1)
+        {
+            var single = o.Clone();
+            single.SplitPartBytes = null;
+            single.TargetBytes = partBytes;
+            var r1 = await RunAsync(inputPath, single, output, sourceRoot, progress, ct).ConfigureAwait(false);
+            r1.Warnings.Add("Coube numa parte só.");
+            return r1;
+        }
+
+        var partDur = dur / n;
+        var outputs = new List<string>();
+        var warnings = new List<string>();
+        long total = 0;
+        string? note = null;
+        try
+        {
+            for (var i = 0; i < n; i++)
+            {
+                var po = o.Clone();
+                po.SplitPartBytes = null;
+                po.TargetBytes = partBytes;
+                po.TrimStart = TimeSpan.FromSeconds(start + i * partDur);
+                po.TrimEnd = TimeSpan.FromSeconds(i == n - 1 ? start + dur : start + (i + 1) * partDur);
+                var os = output.Clone();
+                os.Suffix = (string.IsNullOrWhiteSpace(output.Suffix) ? "-reduzido" : output.Suffix.Trim()) + $"-parte{i + 1}";
+                var idx = i;
+                var r = await RunAsync(inputPath, po, os, sourceRoot, p => progress?.Invoke((idx + p) / n), ct).ConfigureAwait(false);
+                if (r.OutputPath is { } path) outputs.Add(path);
+                total += r.FinalBytes;
+                note ??= r.EngineNote;
+                foreach (var w in r.Warnings) if (!warnings.Contains(w)) warnings.Add(w);
+            }
+        }
+        catch
+        {
+            // Cancelou ou falhou no meio: não deixa partes soltas.
+            foreach (var p in outputs) try { File.Delete(p); } catch { /* em uso */ }
+            throw;
+        }
+
+        Log.Info($"Vídeo dividido em {n} partes: {Path.GetFileName(inputPath)}");
+        return new CompressResult
+        {
+            InputPath = inputPath,
+            OriginalBytes = originalSize,
+            OutputPath = outputs.FirstOrDefault(),
+            ExtraOutputs = outputs.Skip(1).ToList(),
+            FinalBytes = total,
+            Warnings = warnings,
+            EngineNote = $"{n} partes de até {Format.Bytes(partBytes)}, cerca de {Format.Duration(TimeSpan.FromSeconds(partDur))} cada" + (note is null ? "" : " · " + note),
         };
     }
 }
