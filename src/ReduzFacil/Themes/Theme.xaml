@@ -171,6 +171,13 @@
     <Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}">
         <Setter Property="Foreground" Value="{DynamicResource Text}" />
     </Style>
+    <!-- Listas: o texto dos itens herda daqui (o padrão do Windows é preto, invisível no tema escuro) -->
+    <Style TargetType="ListBox" BasedOn="{StaticResource {x:Type ListBox}}">
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style TargetType="ItemsControl">
+        <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
     <Style TargetType="ToolTip" BasedOn="{StaticResource {x:Type ToolTip}}">
         <Setter Property="Background" Value="{DynamicResource Card}" />
         <Setter Property="Foreground" Value="{DynamicResource Text}" />

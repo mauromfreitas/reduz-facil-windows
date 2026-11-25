@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Tema escuro: nomes dos arquivos nas listas (fila, Onde está o peso, Histórico) ficavam escuros demais para ler.
+
 ## 1.1.0
 
 - **Atualização com um clique:** o app procura versão nova ao abrir (e uma vez por dia), mostra a faixa
