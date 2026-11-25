@@ -1,0 +1,123 @@
+﻿2026-11-25 23:20:43.721 [INFO] Iniciando Reduz Fácil v1.3.0 em D:\a\_temp\teste-portatil
+2026-11-25 23:20:43.733 [INFO] Extraindo o motor para D:\a\_temp\teste-portatil\ReduzFacil-dados\engine
+2026-11-25 23:20:44.289 [INFO] Motor extraído em 0.6 s
+2026-11-25 23:20:44.435 [INFO] DLLs nativas do WPF carregadas de D:\a\_temp\teste-portatil\ReduzFacil-dados\engine\wpf
+2026-11-25 23:20:44.683 [INFO] Tema: sistema (claro)
+2026-11-25 23:20:45.386 [INFO] TESTE ok: motores presentes: 
+2026-11-25 23:20:45.620 [INFO] Placa de vídeo: nenhuma disponível, vídeos no processador
+2026-11-25 23:20:45.621 [INFO] TESTE placa: nenhuma
+2026-11-25 23:20:45.953 [INFO] TESTE captura: 01-inicio
+2026-11-25 23:20:45.970 [INFO] 14 arquivo(s) na fila (Manual)
+2026-11-25 23:20:46.349 [INFO] OK Image desenho.bmp: 1,4 MB → 8,5 KB (JPG, 800×600)
+2026-11-25 23:20:46.352 [AVISO] com senha.pdf: Este PDF é protegido por senha. Tire a senha e tente de novo.
+2026-11-25 23:20:47.244 [INFO] OK Pdf documento escaneado.pdf: 3,2 MB → 120 KB (imagens em 150 dpi)
+2026-11-25 23:20:47.532 [INFO] TESTE captura: 02-fila-rodando
+2026-11-25 23:20:48.131 [INFO] OK Image Foto da família São João.jpg: 11,8 MB → 280 KB (JPG, 2560×1920)
+2026-11-25 23:20:48.136 [INFO] OK Audio gravação.wav: 7,3 MB → 626 KB (MP3 128 kbps)
+2026-11-25 23:20:48.166 [INFO] OK Video celular em pé.mp4: 10,6 MB → 2,3 MB (Processador (H.264), 1080×1920)
+2026-11-25 23:20:48.880 [INFO] OK Image logo transparente.png: 7,1 MB → 29,4 KB (WEBP, 1600×1000)
+2026-11-25 23:20:49.377 [INFO] OK Video hdr iphone.mov: 687 KB → 530 KB (Processador (H.264), 1280×720, HDR convertido)
+2026-11-25 23:20:49.411 [AVISO] quebrado.mp4: Não consegui ler este arquivo. Ele pode estar corrompido ou num formato incomum.
+2026-11-25 23:20:54.163 [INFO] OK Video vídeo festa ação.mp4: 34,4 MB → 6,6 MB (Processador (H.264), 1920×1080)
+2026-11-25 23:20:54.250 [INFO] TESTE ok: fila terminou
+2026-11-25 23:20:54.252 [INFO] TESTE item: celular em pé.mp4 Done 11087613->2424512 Processador (H.264), 1080×1920 
+2026-11-25 23:20:54.252 [INFO] TESTE item: com senha.pdf Failed ->  Este PDF é protegido por senha. Tire a senha e tente de novo.
+2026-11-25 23:20:54.252 [INFO] TESTE item: desenho.bmp Done 1440138->8736 JPG, 800×600 
+2026-11-25 23:20:54.252 [INFO] TESTE item: documento escaneado.pdf Done 3326104->123156 imagens em 150 dpi 
+2026-11-25 23:20:54.252 [INFO] TESTE item: Foto da família São João.jpg Done 12324816->287179 JPG, 2560×1920 
+2026-11-25 23:20:54.252 [INFO] TESTE item: gravação.wav Done 7680078->640940 MP3 128 kbps 
+2026-11-25 23:20:54.252 [INFO] TESTE item: hdr iphone.mov Done 703479->542797 Processador (H.264), 1280×720, HDR convertido 
+2026-11-25 23:20:54.252 [INFO] TESTE item: icone.png KeptOriginal 300->300 JPG, 64×64 
+2026-11-25 23:20:54.252 [INFO] TESTE item: iphone.heic KeptOriginal 92337->92337 JPG, 2000×1500 
+2026-11-25 23:20:54.252 [INFO] TESTE item: logo transparente.png Done 7397939->30128 WEBP, 1600×1000 
+2026-11-25 23:20:54.252 [INFO] TESTE item: pequena.jpg KeptOriginal 594->594 JPG, 320×240 
+2026-11-25 23:20:54.252 [INFO] TESTE item: quebrado.mp4 Failed ->  Não consegui ler este arquivo. Ele pode estar corrompido ou num formato incomum.
+2026-11-25 23:20:54.252 [INFO] TESTE item: texto.pdf KeptOriginal 2965->2965 imagens em 150 dpi 
+2026-11-25 23:20:54.252 [INFO] TESTE item: vídeo festa ação.mp4 Done 36105083->6949193 Processador (H.264), 1920×1080 
+2026-11-25 23:20:54.252 [INFO] TESTE ok: amostras na fila (14)
+2026-11-25 23:20:54.253 [INFO] TESTE ok: todas as amostras boas reduziram
+2026-11-25 23:20:54.253 [INFO] TESTE ok: quebrado e PDF com senha deram erro com mensagem
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: celular em pé.mp4
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: desenho.bmp
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: documento escaneado.pdf
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: Foto da família São João.jpg
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: gravação.wav
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: hdr iphone.mov
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: logo transparente.png
+2026-11-25 23:20:54.253 [INFO] TESTE ok: saída e original existem: vídeo festa ação.mp4
+2026-11-25 23:20:54.576 [INFO] TESTE captura: 03-fila-pronta
+2026-11-25 23:20:57.920 [INFO] TESTE captura: 04-comparar-foto
+2026-11-25 23:21:04.261 [INFO] TESTE captura: 05-comparar-video
+2026-11-25 23:21:05.528 [INFO] OK Video celular em pé-reduzido.mp4: 2,3 MB → 990 KB (Processador (H.264), 720×1280)
+2026-11-25 23:21:05.778 [INFO] TESTE ok: vídeo cortado cabe em 1 MB (1014130)
+2026-11-25 23:21:06.239 [INFO] TESTE captura: 06-onde-esta-o-peso
+2026-11-25 23:21:06.755 [INFO] TESTE ok: histórico somou economia
+2026-11-25 23:21:07.070 [INFO] TESTE captura: 07-historico
+2026-11-25 23:21:07.890 [INFO] TESTE captura: 08-configuracoes
+2026-11-25 23:21:07.915 [INFO] Menu do botão direito instalado para D:\a\_temp\teste-portatil\ReduzFacil.exe
+2026-11-25 23:21:07.916 [INFO] TESTE ok: menu do Explorer instalado
+2026-11-25 23:21:07.930 [INFO] Menu do botão direito removido
+2026-11-25 23:21:07.930 [INFO] TESTE ok: menu do Explorer removido
+2026-11-25 23:21:07.932 [INFO] Pasta vigiada ligada: D:\a\_temp\teste-portatil\teste-vigiada
+2026-11-25 23:21:07.932 [INFO] Pasta vigiada ligada: D:\a\_temp\teste-portatil\teste-vigiada-2
+2026-11-25 23:21:07.932 [INFO] TESTE ok: duas pastas vigiadas ligaram (2)
+2026-11-25 23:21:08.861 [INFO] TESTE captura: 10-pastas-vigiadas
+2026-11-25 23:21:08.862 [INFO] TESTE ok: pasta vigiada ligou
+2026-11-25 23:21:12.434 [INFO] Pasta vigiada: novo arquivo D:\a\_temp\teste-portatil\teste-vigiada\nova foto.jpg
+2026-11-25 23:21:12.486 [INFO] OK Image nova foto.jpg: 1,4 MB → 8,5 KB (JPG, 800×600)
+2026-11-25 23:21:12.499 [INFO] TESTE ok: pasta vigiada reduziu a foto nova (Done)
+2026-11-25 23:21:16.501 [INFO] TESTE ok: saída da pasta vigiada não entrou de novo
+2026-11-25 23:21:19.942 [INFO] Pasta vigiada: novo arquivo D:\a\_temp\teste-portatil\teste-vigiada-2\inscricao.jpg
+2026-11-25 23:21:20.047 [INFO] OK Image inscricao.jpg: 1,4 MB → 8,5 KB (JPG, 800×600)
+2026-11-25 23:21:20.124 [INFO] TESTE ok: segunda pasta usou o perfil dela (inscricao.jpg 8740)
+2026-11-25 23:21:20.459 [INFO] TESTE captura: 11-ferramentas
+2026-11-25 23:21:21.005 [INFO] Fotos juntas em PDF: D:\a\_temp\teste-portatil\fotos juntas.pdf
+2026-11-25 23:21:21.007 [INFO] TESTE ok: juntou fotos num PDF
+2026-11-25 23:21:21.774 [INFO] PDF separado em 3 arquivo(s): D:\a\_temp\teste-portatil\fotos juntas.pdf
+2026-11-25 23:21:21.775 [INFO] TESTE ok: separou uma página por arquivo (3)
+2026-11-25 23:21:22.203 [INFO] TESTE captura: 12-repetidos
+2026-11-25 23:21:23.223 [INFO] 1 arquivo(s) na fila (Paste)
+2026-11-25 23:21:23.529 [INFO] TESTE colar: colado 2026-11-25 23.21.23.png KeptOriginal copiado=True
+2026-11-25 23:21:24.385 [INFO] TESTE captura: 15-mapa-do-disco
+2026-11-25 23:21:28.704 [INFO] TESTE captura: 16-inicio
+2026-11-25 23:21:57.801 [INFO] TESTE manutenção: programas=RanToCompletion drivers=RanToCompletion
+2026-11-25 23:21:58.124 [INFO] TESTE captura: 17-manutencao
+2026-11-25 23:21:58.130 [INFO] Tema: escuro (escuro)
+2026-11-25 23:21:59.051 [INFO] TESTE captura: 13-escuro-reduzir
+2026-11-25 23:21:59.971 [INFO] TESTE captura: 14-escuro-configuracoes
+2026-11-25 23:21:59.974 [INFO] Tema: claro (claro)
+2026-11-25 23:22:03.636 [INFO] TESTE ok: pausa segurou o vídeo (0,67→0,67)
+2026-11-25 23:22:03.955 [INFO] TESTE captura: 09-pausado
+2026-11-25 23:22:04.911 [INFO] OK Video celular em pé-reduzido.mp4: 2,3 MB → 2,1 MB (Processador (H.264), 1080×1920)
+2026-11-25 23:22:05.168 [INFO] TESTE ok: continuou depois da pausa
+2026-11-25 23:22:05.169 [INFO] TESTE OK
+2026-11-25 23:22:05.198 [INFO] Fechando
+2026-11-25 23:22:05.436 [INFO] Iniciando Reduz Fácil v1.3.0 em D:\a\_temp\teste-portatil
+2026-11-25 23:22:05.442 [INFO] Motor já preparado (CA8B53BA92CA)
+2026-11-25 23:22:05.446 [INFO] DLLs nativas do WPF carregadas de D:\a\_temp\teste-portatil\ReduzFacil-dados\engine\wpf
+2026-11-25 23:22:05.777 [INFO] Tema: sistema (claro)
+2026-11-25 23:22:06.058 [INFO] Placa de vídeo: nenhuma disponível, vídeos no processador
+2026-11-25 23:22:06.177 [INFO] TESTE espera: pronto para receber
+2026-11-25 23:22:06.423 [INFO] 1 arquivo(s) na fila (ShellMenu)
+2026-11-25 23:22:06.979 [INFO] OK Image Foto da família São João.jpg: 11,8 MB → 280 KB (JPG, 2560×1920)
+2026-11-25 23:22:21.741 [INFO] TESTE recebido: Foto da família São João.jpg Done origem=ShellMenu D:\a\_temp\Fotos e vídeos da família\Foto da família São João-reduzido (2).jpg
+2026-11-25 23:22:21.741 [INFO] TESTE OK
+2026-11-25 23:22:21.749 [INFO] Fechando
+2026-11-25 23:22:21.893 [INFO] Iniciando Reduz Fácil v1.3.0 em D:\a\_temp\teste-portatil
+2026-11-25 23:22:21.905 [INFO] Motor já preparado (CA8B53BA92CA)
+2026-11-25 23:22:21.909 [INFO] DLLs nativas do WPF carregadas de D:\a\_temp\teste-portatil\ReduzFacil-dados\engine\wpf
+2026-11-25 23:22:22.221 [INFO] Tema: sistema (claro)
+2026-11-25 23:22:22.476 [INFO] Placa de vídeo: nenhuma disponível, vídeos no processador
+2026-11-25 23:22:22.571 [INFO] TESTE atualizar: instalando D:\a\reduz-facil-windows\reduz-facil-windows\publish\ReduzFacil.exe
+2026-11-25 23:22:23.259 [INFO] Atualização instalada; abrindo a versão nova
+2026-11-25 23:22:23.259 [INFO] TESTE OK
+2026-11-25 23:22:23.277 [INFO] Fechando
+2026-11-25 23:22:23.390 [INFO] Iniciando Reduz Fácil v1.3.0 em D:\a\_temp\teste-portatil
+2026-11-25 23:22:23.398 [INFO] Motor já preparado (CA8B53BA92CA)
+2026-11-25 23:22:23.401 [INFO] DLLs nativas do WPF carregadas de D:\a\_temp\teste-portatil\ReduzFacil-dados\engine\wpf
+2026-11-25 23:22:23.739 [INFO] Tema: sistema (claro)
+2026-11-25 23:22:24.048 [INFO] Placa de vídeo: nenhuma disponível, vídeos no processador
+2026-11-25 23:22:24.152 [INFO] Atualizado: de 1.3.0 para 1.3.0
+2026-11-25 23:22:24.155 [INFO] TESTE espera: pronto para receber
+2026-11-25 23:22:27.165 [INFO] TESTE OK
+2026-11-25 23:22:27.175 [INFO] Fechando

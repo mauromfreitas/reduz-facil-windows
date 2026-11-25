@@ -1,0 +1,50 @@
+[   6.9s] antes e depois: foto, vídeo (trecho) e PDF geram imagens para comparar: OK
+[   0.1s] atualização: compara versões e acha o .exe da release: OK
+[   0.0s] cabeçalhos: tamanho de JPG/PNG/WebP/BMP, duração de WAV, páginas de PDF: OK
+[   0.0s] coletor: pasta arrastada pula saídas nossas, temporários e ocultos: OK
+[   0.1s] configurações: migração da pasta vigiada da 1.0 para a lista: OK
+[   0.2s] configurações: salvam, voltam e arquivo estragado não impede abrir: OK
+[   0.4s] converter: PDF, MP3 e MP4 H.264 já compatíveis ficam como estão: OK
+[   3.2s] dividir vídeo: partes dentro da meta, na ordem, somando a duração: OK
+[   1.2s] fila: cancelar vídeo no meio não deixa arquivo nem temporário: OK
+[   6.9s] fila: pausar suspende o motor e continuar termina: OK
+[   1.5s] fila: sem começar automaticamente espera o Iniciar; falha pode tentar de novo: OK
+[   2.0s] fila: vários tipos juntos, vídeo numa pista e o resto em paralelo: OK
+[   0.0s] formatos: bytes, tempo e números em português: OK
+[   0.0s] histórico: guarda resultado e soma o total economizado: OK
+[   0.1s] imagem: Converter: BMP vira JPG; JPG que já é JPG não é refeito: OK
+[   0.1s] imagem: HEIC do iPhone vira JPG: OK
+[   0.4s] imagem: PNG transparente vira WebP com transparência: OK
+[   0.0s] imagem: formato JPG pedido guarda a conversão mesmo se maior: OK
+[   0.0s] imagem: foto já otimizada mantém o original e não cria arquivo: OK
+[   0.7s] imagem: foto por qualidade fica menor, em JPG, até 2560 px e sem GPS: OK
+[   1.6s] imagem: meta de 1 MB cabe e mantém qualidade razoável: OK
+[   3.3s] imagem: meta de 200 KB reduz as dimensões em vez de destruir: OK
+[   0.7s] imagem: sem a opção de privacidade o EXIF continua: OK
+[   0.0s] manutenção: limpeza mede, respeita a idade e apaga só o que pode: OK
+[   0.0s] manutenção: lê a tabela do winget upgrade (português e inglês, com spinner): OK
+[   0.0s] mapa do disco: tamanhos por pasta e tipo; blocos cobrem a área sem sobrar: OK
+[   5.8s] onde está o peso: acha os pesados e estima a economia: OK
+[   5.5s] pasta vigiada: arquivo novo entra uma vez só, depois de terminar de copiar: OK
+[   0.2s] pdf: com senha dá mensagem clara: OK
+[   0.5s] pdf: escaneado fica bem menor por qualidade: OK
+[   3.6s] pdf: juntar fotos (A4 e tamanho da foto) e separar páginas: OK
+[   1.3s] pdf: meta de 500 KB cabe: OK
+[   0.2s] pdf: só texto mantém o original: OK
+[   1.8s] pdf: tons de cinza fica ainda menor: OK
+[   0.0s] planejador: bitrate da meta, resolução cai com pouco bit: OK
+[   9.6s] repetidos: idênticos com nomes diferentes e fotos parecidas em grupos separados: OK
+[   1.0s] saída: ao lado do original, nomes repetidos ganham (2), original intacto: OK
+[   0.0s] saída: pasta escolhida recria as subpastas da pasta arrastada: OK
+[   3.4s] vídeo: H.265 sai com etiqueta hvc1 (abre no iPhone/Mac): OK
+[   1.4s] vídeo: HDR do iPhone vira SDR (BT.709, 8 bits): OK
+[   0.0s] vídeo: arquivo corrompido dá mensagem clara: OK
+[   0.9s] vídeo: cortar 2–6 s, girar 90°, sem áudio: OK
+[   0.1s] vídeo: extrair só o áudio gera MP3: OK
+[   1.0s] vídeo: gravado em pé continua em pé e limita o lado menor: OK
+[   3.5s] vídeo: meta de 3 MB cabe (2 passadas) e fica perto da meta: OK
+[   0.0s] vídeo: meta pequena demais explica o mínimo: OK
+[   1.6s] vídeo: placa de vídeo que falha cai para o processador: OK
+[   4.3s] vídeo: por qualidade fica menor, MP4 tocável, mesma duração, sem localização: OK
+[   0.6s] áudio: WAV vira MP3 bem menor; meta de 300 KB cabe: OK
+Resultado: 49 ok, 0 falharam, 0 pulados
