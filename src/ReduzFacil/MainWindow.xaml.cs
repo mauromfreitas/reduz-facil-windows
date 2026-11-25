@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly AppServices _s;
     private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(4) };
 
+    public HomeView Home { get; }
     public ReduzirView Reduzir { get; }
     public PesoView Peso { get; }
     public FerramentasView Ferramentas { get; }
@@ -31,7 +32,8 @@ public partial class MainWindow : Window
         Ferramentas = new FerramentasView(services, this);
         Historico = new HistoricoView(services, this);
         Config = new ConfigView(services, this);
-        Host.Content = Reduzir;
+        Home = new HomeView(services, this);
+        Host.Content = Home;
         VersionText.Text = "versão " + AppInfo.Version;
         ThemeManager.TitleBar(this);
 
@@ -41,7 +43,7 @@ public partial class MainWindow : Window
             ToastBox.Visibility = Visibility.Collapsed;
         };
 
-        DragEnter += (_, e) => { if (e.Data.GetDataPresent(DataFormats.FileDrop) && Host.Content == Reduzir) DropOverlay.Visibility = Visibility.Visible; };
+        DragEnter += (_, e) => { if (e.Data.GetDataPresent(DataFormats.FileDrop) && (Host.Content == Reduzir || Host.Content == Home)) DropOverlay.Visibility = Visibility.Visible; };
         DragLeave += (_, _) => DropOverlay.Visibility = Visibility.Collapsed;
         DragOver += (_, e) =>
         {
@@ -78,6 +80,7 @@ public partial class MainWindow : Window
     {
         switch (name)
         {
+            case "inicio": NavInicio.IsChecked = true; break;
             case "peso": NavPeso.IsChecked = true; break;
             case "ferramentas": NavFerramentas.IsChecked = true; break;
             case "historico": NavHistorico.IsChecked = true; break;
@@ -88,12 +91,14 @@ public partial class MainWindow : Window
 
     private void OnNav(object sender, RoutedEventArgs e)
     {
-        if (Host is null || Reduzir is null) return; // durante o InitializeComponent
-        Host.Content = sender == NavPeso ? Peso
+        if (Host is null || Home is null) return; // durante o InitializeComponent e antes de criar as telas
+        Host.Content = sender == NavInicio ? Home
+            : sender == NavPeso ? Peso
             : sender == NavFerramentas ? Ferramentas
             : sender == NavHistorico ? Historico
             : sender == NavConfig ? Config
             : Reduzir;
+        if (Host.Content == Home) Home.Reload();
         if (Host.Content == Historico) Historico.Reload();
         if (Host.Content == Config) Config.Reload();
     }

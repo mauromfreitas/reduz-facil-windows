@@ -1,0 +1,46 @@
+<UserControl x:Class="ReduzFacil.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <TextBlock x:Name="Hello" Text="Início" Style="{StaticResource H1}" />
+            <TextBlock Text="Como está o espaço deste computador e o que dá para fazer agora." Style="{StaticResource MutedText}" Margin="0,0,0,14" />
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <Button Content="⬇  Reduzir arquivos" Style="{StaticResource Primary}" Padding="20,10" FontSize="15" Click="OnReduce" />
+                <Button Content="🗺  Ver o mapa do disco" Padding="20,10" FontSize="15" Click="OnMap" />
+                <Button Content="🔍  Procurar repetidos" Padding="20,10" FontSize="15" Click="OnDup" />
+            </StackPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="14" />
+                    <ColumnDefinition Width="2*" />
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="Discos" Style="{StaticResource H2}" />
+                        <StackPanel x:Name="DrivesPanel" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="Economia com o Reduz Fácil" Style="{StaticResource H2}" />
+                        <TextBlock x:Name="SavedTotal" FontSize="28" FontWeight="SemiBold" Foreground="{DynamicResource AccentDark}" />
+                        <TextBlock x:Name="SavedSub" Style="{StaticResource MutedText}" />
+                        <TextBlock x:Name="SavedMonth" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,0" />
+                        <TextBlock Text="neste mês" Style="{StaticResource MutedText}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Sugestões" Style="{StaticResource H2}" />
+                    <StackPanel x:Name="TipsPanel" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

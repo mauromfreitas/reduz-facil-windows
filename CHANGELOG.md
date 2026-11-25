@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.1
+
+- **Início:** nova primeira tela com o espaço livre de cada disco, o total economizado (desde sempre e no mês)
+  e até 3 sugestões (disco quase cheio, pastas com muito peso em mídia).
+- **Mapa do disco** (em Onde está o peso): blocos do tamanho de cada pasta, com cor pelo tipo que mais ocupa
+  (fotos, vídeos, áudios, PDFs, outros); clique para entrar na pasta.
+- **Reduzir selecionados** (Onde está o peso): confirma antes (quantos, como e a economia estimada), começa na hora
+  e mostra o progresso na própria tela; no fim destaca "Originais para a Lixeira".
+- **Nome do arquivo sem versão:** as Releases passam a ser `ReduzFacil.exe`, e quem tem `ReduzFacil-1.x.y.exe`
+  passa a ter `ReduzFacil.exe` depois desta atualização (o menu do botão direito se ajusta sozinho).
+
 ## 1.2.0
 
 - **Atalho Discord:** cabe no limite de envio do Discord e sai em MP4 H.264 (toca direto no chat). Escolha o plano:

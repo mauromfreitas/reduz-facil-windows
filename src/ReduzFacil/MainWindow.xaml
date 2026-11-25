@@ -22,7 +22,10 @@
                         <TextBlock Text="para Windows" Foreground="#8FC9B5" FontSize="12" />
                     </StackPanel>
                 </StackPanel>
-                <RadioButton x:Name="NavReduzir" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" IsChecked="True" Checked="OnNav">
+                <RadioButton x:Name="NavInicio" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" IsChecked="True" Checked="OnNav">
+                    <TextBlock Text="🏠  Início" />
+                </RadioButton>
+                <RadioButton x:Name="NavReduzir" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
                     <TextBlock Text="⬇  Reduzir" />
                 </RadioButton>
                 <RadioButton x:Name="NavPeso" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">

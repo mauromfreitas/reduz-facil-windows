@@ -93,7 +93,7 @@ jobs:
           $info = $exe.VersionInfo
           Write-Host ("::notice title=exe::{0:N1} MB - {1} {2}" -f ($exe.Length / 1MB), $info.ProductName, $info.ProductVersion)
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item $exe "dist/ReduzFacil-${{ steps.ver.outputs.full }}.exe"
+          Copy-Item $exe "dist/ReduzFacil.exe"  # sem versão no nome: a atualização mantém o mesmo arquivo
 
       - name: Testar o .exe num Windows limpo
         shell: pwsh
@@ -134,7 +134,7 @@ jobs:
           prerelease: ${{ steps.ver.outputs.prerelease }}
           generate_release_notes: false
           body: |
-            Baixe o arquivo **ReduzFacil-${{ steps.ver.outputs.full }}.exe** abaixo, coloque numa pasta sua (ex.: Documentos\Reduz Fácil) e abra com dois cliques.
+            Baixe o arquivo **ReduzFacil.exe** abaixo, coloque numa pasta sua (ex.: Documentos\Reduz Fácil) e abra com dois cliques.
 
             Na primeira vez, o Windows pode mostrar "O Windows protegeu o computador": clique em **Mais informações** e depois em **Executar assim mesmo**.
             A primeira abertura demora alguns segundos (prepara os motores na pasta ReduzFacil-dados).

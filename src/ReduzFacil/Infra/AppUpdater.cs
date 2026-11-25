@@ -22,6 +22,22 @@ public sealed class AppUpdater : IDisposable
     public static string NewPath => AppInfo.ExePath + ".novo";
     public static string OldPath => AppInfo.ExePath + ".antigo";
 
+    /// <summary>
+    /// Nome do .exe depois da atualização: "ReduzFacil-1.1.2.exe" (nome do download antigo) vira "ReduzFacil.exe", uma vez.
+    /// Qualquer outro nome que o usuário escolheu é mantido.
+    /// </summary>
+    public static string TargetPath(string exe)
+    {
+        var dir = Path.GetDirectoryName(exe)!;
+        var name = Path.GetFileName(exe);
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"^ReduzFacil-\d+\.\d+\.\d+.*\.exe$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        {
+            var clean = Path.Combine(dir, "ReduzFacil.exe");
+            if (!File.Exists(clean)) return clean;
+        }
+        return exe;
+    }
+
     public async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
     {
         try
@@ -44,21 +60,23 @@ public sealed class AppUpdater : IDisposable
     public static void SwapAndRestart(string? newExe = null, IEnumerable<string>? extraArgs = null)
     {
         var exe = AppInfo.ExePath;
+        var target = TargetPath(exe);
         var source = newExe ?? NewPath;
         if (!File.Exists(source)) throw new FileNotFoundException("O arquivo da versão nova sumiu.", source);
         TryDelete(OldPath);
         File.Move(exe, OldPath);
         try
         {
-            if (newExe is null) File.Move(source, exe);
-            else File.Copy(source, exe);
+            if (newExe is null) File.Move(source, target);
+            else File.Copy(source, target);
         }
         catch
         {
             File.Move(OldPath, exe); // volta como estava
             throw;
         }
-        var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
+        if (!string.Equals(target, exe, StringComparison.OrdinalIgnoreCase)) Log.Info($"Arquivo renomeado: {Path.GetFileName(exe)} → {Path.GetFileName(target)}");
+        var psi = new ProcessStartInfo(target) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(target)! };
         psi.ArgumentList.Add("--atualizado");
         psi.ArgumentList.Add(AppInfo.Version);
         psi.ArgumentList.Add("--esperar-pid");
@@ -71,10 +89,17 @@ public sealed class AppUpdater : IDisposable
     /// <summary>Na abertura: apaga o .exe antigo e restos de download.</summary>
     public static void CleanupLeftovers()
     {
-        for (var i = 0; i < 10 && File.Exists(OldPath); i++)
+        // O antigo pode ter outro nome (ex.: ReduzFacil-1.1.2.exe.antigo, quando o arquivo foi renomeado na atualização).
+        var dir = Path.GetDirectoryName(AppInfo.ExePath)!;
+        string[] olds;
+        try { olds = Directory.GetFiles(dir, "ReduzFacil*.exe.antigo"); } catch { olds = []; }
+        foreach (var old in olds)
         {
-            TryDelete(OldPath);
-            if (File.Exists(OldPath)) Thread.Sleep(300);
+            for (var i = 0; i < 10 && File.Exists(old); i++)
+            {
+                TryDelete(old);
+                if (File.Exists(old)) Thread.Sleep(300);
+            }
         }
         TryDelete(NewPath + ".baixando");
     }

@@ -97,11 +97,11 @@ public sealed class JobQueue
         {
             var existing = _items.FirstOrDefault(i => !i.IsFinished && SamePath(i.Path, full));
             if (existing is not null) return existing;
-            // Pasta vigiada e Ctrl+V sempre começam sozinhos (quem cola quer o resultado já).
+            // Pasta vigiada, Ctrl+V e "Reduzir selecionados" (já confirmado) começam na hora.
             item = new QueueItem
             {
                 Path = full, Kind = kind.Value, Options = options.Clone(), SourceRoot = sourceRoot, Origin = origin, SizeBytes = size,
-                Released = AutoStart || origin is JobOrigin.Watch or JobOrigin.Paste,
+                Released = AutoStart || origin is JobOrigin.Watch or JobOrigin.Paste or JobOrigin.Scan,
             };
             _items.Add(item);
         }

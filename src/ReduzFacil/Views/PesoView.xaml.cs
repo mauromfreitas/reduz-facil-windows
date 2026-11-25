@@ -28,6 +28,7 @@ public partial class PesoView : UserControl
         FolderText.Text = _s.Settings.ScanLastFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         MinText.Text = Format.Number(_s.Settings.ScanMinMb);
         BuildQuick();
+        BuildLegend();
         _s.Queue.ItemChanged += i => Dispatcher.BeginInvoke(() => OnQueueItem(i));
         ThemeManager.Changed += () =>
         {
@@ -91,6 +92,7 @@ public partial class PesoView : UserControl
         _s.Settings.ScanMinMb = minMb;
         _s.Save();
         if (ModeDup.IsChecked == true) await FindDuplicatesAsync(folder, SimilarCheck.IsChecked == true);
+        else if (ModeMap.IsChecked == true) await BuildMapAsync(folder);
         else await ScanAsync(folder, minMb);
     }
 
@@ -164,20 +166,79 @@ public partial class PesoView : UserControl
         RecycleBtn.IsEnabled = RecyclableItems().Any();
     }
 
+    private readonly List<QueueItem> _batch = [];
+
     private void OnReduce(object sender, RoutedEventArgs e)
     {
+        var todo = _hits.Where(h => h.Selected && (h.Queued is null || h.Queued.IsFinished && h.Queued.Status is not (JobStatus.Done or JobStatus.KeptOriginal))).ToList();
+        if (todo.Count == 0) return;
         var opts = _s.CurrentOptions();
-        var n = 0;
-        foreach (var h in _hits.Where(h => h.Selected && (h.Queued is null || h.Queued.IsFinished && h.Queued.Status is not (JobStatus.Done or JobStatus.KeptOriginal))))
+        var level = opts.Level switch { Core.Model.Level.Maxima => "Máxima qualidade", Core.Model.Level.Menor => "Menor tamanho", _ => "Equilibrado" };
+        var how = opts.ConvertOnly ? "no modo Converter" : opts.TargetBytes is { } t ? $"com meta de {Format.Bytes(t)} por arquivo" : $"no nível {level}";
+        var est = todo.Sum(h => h.Hit.SavingBytes);
+        var msg = $"Reduzir {todo.Count} arquivo(s) {how}?\n\nEconomia estimada: ~{Format.Bytes(est)}.\n" +
+                  "Os originais continuam onde estão; os reduzidos são salvos com \"" + _s.EffectiveSuffix + "\" no nome.\n\n" +
+                  "(Para mudar o nível ou a meta, ajuste na tela Reduzir antes.)";
+        if (MessageBox.Show(Window.GetWindow(this), msg, "Reduzir agora", MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
+
+        // Novo lote: o que já terminou sai da faixa.
+        _batch.RemoveAll(i => i.IsFinished);
+        foreach (var h in todo)
         {
             var item = _s.Queue.Add(h.Hit.Path, opts, null, JobOrigin.Scan);
             if (item is null) continue;
             h.Queued = item;
             h.State = "Na fila…";
-            n++;
+            _batch.Add(item);
         }
-        if (n > 0) _main.Toast($"{n} arquivo(s) na fila. Acompanhe aqui ou na tela Reduzir.");
+        if (_s.Queue.IsPaused) _s.Queue.ResumeAll();
+        _s.Queue.Schedule();
+        ReduceCloseBtn.Visibility = Visibility.Collapsed;
+        ReduceBar.Visibility = Visibility.Visible;
+        UpdateReduceBar();
         UpdateSelection();
+    }
+
+    private void UpdateReduceBar()
+    {
+        if (_batch.Count == 0) return;
+        var done = _batch.Count(i => i.IsFinished);
+        var saved = _batch.Where(i => i.Result is { KeptOriginal: false }).Sum(i => Math.Max(0, i.Result!.OriginalBytes - i.Result.FinalBytes));
+        var running = _batch.Where(i => i.Status == JobStatus.Running).Sum(i => i.Progress);
+        ReduceProgress.Value = (done + running) / _batch.Count;
+        ReducePauseBtn.Content = _s.Queue.IsPaused ? "Continuar" : "Pausar";
+        if (done == _batch.Count)
+        {
+            var failed = _batch.Count(i => i.Status == JobStatus.Failed);
+            ReduceText.Text = $"Pronto: {_batch.Count - failed} de {_batch.Count} reduzido(s), {Format.Bytes(saved)} economizados." +
+                              (RecyclableItems().Any() ? " Para liberar o espaço de verdade, use \"Originais para a Lixeira…\"." : "") +
+                              (failed > 0 ? $" {failed} com erro (veja na lista)." : "");
+            ReducePauseBtn.Visibility = Visibility.Collapsed;
+            ReduceCloseBtn.Visibility = Visibility.Visible;
+            if (RecyclableItems().Any()) RecycleBtn.Style = (Style)FindResource("Primary");
+        }
+        else
+        {
+            ReduceText.Text = _s.Queue.IsPaused
+                ? $"Pausado: {done} de {_batch.Count} prontos · {Format.Bytes(saved)} economizados até agora"
+                : $"Reduzindo {Math.Min(done + 1, _batch.Count)} de {_batch.Count} · {Format.Bytes(saved)} economizados até agora";
+            ReducePauseBtn.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void OnReducePause(object sender, RoutedEventArgs e)
+    {
+        if (_s.Queue.IsPaused) _s.Queue.ResumeAll();
+        else _s.Queue.PauseAll();
+        UpdateReduceBar();
+    }
+
+    private void OnSeeQueue(object sender, RoutedEventArgs e) => _main.ShowReduzir();
+
+    private void OnReduceClose(object sender, RoutedEventArgs e)
+    {
+        _batch.Clear();
+        ReduceBar.Visibility = Visibility.Collapsed;
     }
 
     private void OnQueueItem(QueueItem i)
@@ -194,6 +255,7 @@ public partial class PesoView : UserControl
             JobStatus.Canceled => "Cancelado",
             _ => "",
         };
+        if (_batch.Contains(i)) UpdateReduceBar();
         if (i.IsFinished) UpdateSelection();
     }
 
@@ -222,14 +284,20 @@ public partial class PesoView : UserControl
 
     private void OnMode(object sender, RoutedEventArgs e)
     {
-        if (DupList is null || HitList is null) return; // durante o InitializeComponent
+        if (DupList is null || HitList is null || MapPanel is null) return; // durante o InitializeComponent
         var dup = ModeDup.IsChecked == true;
-        HitList.Visibility = HeavyFooter.Visibility = MinRow.Visibility = dup ? Visibility.Collapsed : Visibility.Visible;
+        var map = ModeMap.IsChecked == true;
+        var heavy = !dup && !map;
+        HitList.Visibility = HeavyFooter.Visibility = MinRow.Visibility = heavy ? Visibility.Visible : Visibility.Collapsed;
         DupList.Visibility = DupFooter.Visibility = SimilarCheck.Visibility = dup ? Visibility.Visible : Visibility.Collapsed;
-        Status.Text = "";
+        MapPanel.Visibility = map ? Visibility.Visible : Visibility.Collapsed;
+        ReduceBar.Visibility = heavy && _batch.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Status.Text = map && _mapRoot is null ? "Escolha a pasta ou o disco e clique em Procurar para ver o mapa." : "";
     }
 
     public void ShowDuplicatesMode() => ModeDup.IsChecked = true;
+
+    public void ShowMapMode() => ModeMap.IsChecked = true;
 
     /// <summary>Também usado pelo teste automático.</summary>
     public async Task FindDuplicatesAsync(string folder, bool similar)
@@ -335,5 +403,162 @@ public partial class PesoView : UserControl
         DupList.Items.Refresh();
         _main.Toast($"{n} arquivo(s) na Lixeira.");
         UpdateDupSelection();
+    }
+
+    // ---------------- mapa do disco ----------------
+
+    private MapNode? _mapRoot;
+    private MapNode? _mapCurrent;
+
+    public static readonly (MapKind Kind, string Label, string Hex)[] MapColors =
+    [
+        (MapKind.Fotos, "Fotos", "#3B82F6"),
+        (MapKind.Videos, "Vídeos", "#EC4899"),
+        (MapKind.Audios, "Áudios", "#F59E0B"),
+        (MapKind.Pdfs, "PDFs", "#EF4444"),
+        (MapKind.Outros, "Outros arquivos", "#94A3B8"),
+    ];
+
+    private static System.Windows.Media.Brush KindBrush(MapKind k)
+    {
+        var hex = MapColors.First(c => c.Kind == k).Hex;
+        var b = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
+        b.Freeze();
+        return b;
+    }
+
+    private void BuildLegend()
+    {
+        MapLegend.Children.Clear();
+        foreach (var (kind, label, _) in MapColors)
+        {
+            var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 16, 0) };
+            sp.Children.Add(new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(3), Background = KindBrush(kind), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
+            var pct = _mapCurrent is { Size: > 0 } n ? $" {n.ByKind[(int)kind] * 100.0 / n.Size:0}%" : "";
+            var t = new TextBlock { Text = label + pct, FontSize = 12.5, VerticalAlignment = VerticalAlignment.Center };
+            t.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+            sp.Children.Add(t);
+            MapLegend.Children.Add(sp);
+        }
+    }
+
+    /// <summary>Também usado pelo teste automático.</summary>
+    public async Task BuildMapAsync(string folder)
+    {
+        _cts = new CancellationTokenSource();
+        ScanBtn.Content = "Parar";
+        Status.Text = "Medindo as pastas…";
+        var progress = new Progress<MapProgress>(p => Status.Text = $"Medindo… {p.Folders:N0} pastas · {Format.Bytes(p.Bytes)} · {p.Current}");
+        try
+        {
+            var token = _cts.Token;
+            _mapRoot = await Task.Run(() => DiskMapper.Build(folder, progress, token));
+            ShowMapNode(_mapRoot);
+        }
+        catch (OperationCanceledException)
+        {
+            Status.Text = "Medição interrompida.";
+        }
+        catch (Exception ex)
+        {
+            Status.Text = "Erro no mapa: " + ex.Message;
+            Log.Error("Erro no mapa do disco", ex);
+        }
+        finally
+        {
+            _cts?.Dispose();
+            _cts = null;
+            ScanBtn.Content = "Procurar";
+        }
+    }
+
+    private void ShowMapNode(MapNode n)
+    {
+        _mapCurrent = n;
+        MapPath.Text = $"{n.Path}  ·  {Format.Bytes(n.Size)} em {n.Files:N0} arquivo(s)";
+        MapUpBtn.IsEnabled = n.Parent is not null;
+        var media = n.ByKind[0] + n.ByKind[1] + n.ByKind[2] + n.ByKind[3];
+        Status.Text = $"Clique numa pasta para entrar. Fotos, vídeos, áudios e PDFs ocupam {Format.Bytes(media)} aqui ({(n.Size > 0 ? media * 100.0 / n.Size : 0):0}%).";
+        BuildLegend();
+        RenderMap();
+    }
+
+    private void OnMapResize(object sender, SizeChangedEventArgs e) => RenderMap();
+
+    private void RenderMap()
+    {
+        MapCanvas.Children.Clear();
+        if (_mapCurrent is not { } n || MapCanvas.ActualWidth < 20 || MapCanvas.ActualHeight < 20) return;
+        // Até 60 blocos; o resto vira um bloco só.
+        var items = n.Children.Take(60).ToList();
+        var rest = n.Children.Skip(60).ToList();
+        if (rest.Count > 0)
+        {
+            var other = new MapNode { Name = $"(mais {rest.Count} pastas pequenas)", Path = n.Path, IsFolder = false, Size = rest.Sum(r => r.Size) };
+            foreach (var r in rest) for (var i = 0; i < 5; i++) other.ByKind[i] += r.ByKind[i];
+            items.Add(other);
+        }
+        if (items.Count == 0)
+        {
+            MapCanvas.Children.Add(new TextBlock { Text = "Pasta vazia.", Margin = new Thickness(16) });
+            return;
+        }
+        var rects = Treemap.Layout(items, c => c.Size, new MapRect(0, 0, MapCanvas.ActualWidth, MapCanvas.ActualHeight));
+        foreach (var (node, r) in rects)
+        {
+            if (r.W < 1 || r.H < 1) continue;
+            var block = new Border
+            {
+                Width = Math.Max(0, r.W - 2),
+                Height = Math.Max(0, r.H - 2),
+                Background = KindBrush(node.Dominant),
+                CornerRadius = new CornerRadius(4),
+                Cursor = node.IsFolder && node.Children.Count > 0 ? System.Windows.Input.Cursors.Hand : System.Windows.Input.Cursors.Arrow,
+                ToolTip = $"{node.Name}\n{Format.Bytes(node.Size)} · {node.Files:N0} arquivo(s)\n" +
+                          string.Join("  ", MapColors.Where(c => node.ByKind[(int)c.Kind] > 0).Select(c => $"{c.Label}: {Format.Bytes(node.ByKind[(int)c.Kind])}")),
+                Opacity = node.IsFolder ? 0.92 : 0.6,
+            };
+            if (r.W > 70 && r.H > 34)
+            {
+                var sp = new StackPanel { Margin = new Thickness(6, 4, 6, 4) };
+                sp.Children.Add(new TextBlock { Text = node.Name, Foreground = System.Windows.Media.Brushes.White, FontWeight = FontWeights.SemiBold, FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis });
+                sp.Children.Add(new TextBlock { Text = Format.Bytes(node.Size), Foreground = System.Windows.Media.Brushes.White, FontSize = 12 });
+                block.Child = sp;
+            }
+            var target = node;
+            block.MouseLeftButtonUp += (_, _) =>
+            {
+                if (target.IsFolder && target.Children.Count > 0) ShowMapNode(target);
+            };
+            Canvas.SetLeft(block, r.X + 1);
+            Canvas.SetTop(block, r.Y + 1);
+            MapCanvas.Children.Add(block);
+        }
+    }
+
+    private void OnMapUp(object sender, RoutedEventArgs e)
+    {
+        if (_mapCurrent?.Parent is { } p) ShowMapNode(p);
+    }
+
+    private void OnMapOpen(object sender, RoutedEventArgs e)
+    {
+        if (_mapCurrent is { } n) Explorer.ShowInFolder(n.Path);
+    }
+
+    private void OnMapHeavy(object sender, RoutedEventArgs e)
+    {
+        if (_mapCurrent is not { } n) return;
+        FolderText.Text = n.Path;
+        ModeHeavy.IsChecked = true;
+        OnScan(sender, e);
+    }
+
+    /// <summary>Abre esta tela já procurando (usado pelas sugestões do Início).</summary>
+    public void StartScan(string folder, bool map)
+    {
+        FolderText.Text = folder;
+        if (map) ModeMap.IsChecked = true; else ModeHeavy.IsChecked = true;
+        OnScan(this, new RoutedEventArgs());
     }
 }

@@ -126,3 +126,34 @@ public static class V11Tests
         Assert.Equal("sistema", s.Theme, "tema padrão");
     }
 }
+
+public static class V121Tests
+{
+    [Teste("mapa do disco: tamanhos por pasta e tipo; blocos cobrem a área sem sobrar")]
+    public static void MapaDoDisco()
+    {
+        var root = Env.NewOut("mapa");
+        Directory.CreateDirectory(Path.Combine(root, "Videos"));
+        Directory.CreateDirectory(Path.Combine(root, "Fotos", "2026"));
+        File.Copy(Env.F(Fixtures.Video), Path.Combine(root, "Videos", "a.mp4"));
+        File.Copy(Env.F(Fixtures.Photo), Path.Combine(root, "Fotos", "2026", "b.jpg"));
+        File.WriteAllBytes(Path.Combine(root, "notas.txt"), new byte[1000]);
+        var map = DiskMapper.Build(root, null, default);
+        var expected = new FileInfo(Env.F(Fixtures.Video)).Length + new FileInfo(Env.F(Fixtures.Photo)).Length + 1000;
+        Assert.Equal(expected, map.Size, "soma de tudo");
+        Assert.Equal("Videos", map.Children[0].Name, "maior primeiro");
+        Assert.Equal(MapKind.Videos, map.Children[0].Dominant, "cor de vídeo");
+        Assert.Equal(MapKind.Fotos, map.Children[1].Dominant, "cor de foto");
+        Assert.True(map.Children.Any(c => !c.IsFolder && c.Size == 1000), "arquivos soltos agrupados");
+
+        var sizes = new double[] { 50, 25, 12, 8, 3, 1, 1 };
+        var rects = Treemap.Layout(sizes, s => s, new MapRect(0, 0, 400, 300));
+        Assert.Equal(sizes.Length, rects.Count, "um bloco por item");
+        Assert.Near(400 * 300, rects.Sum(r => r.Rect.W * r.Rect.H), 0.5, "cobre a área toda");
+        foreach (var (s, r) in rects)
+        {
+            Assert.Near(s / 100.0 * 120000, r.W * r.H, 0.5, "área proporcional");
+            Assert.True(r.X >= -0.01 && r.Y >= -0.01 && r.X + r.W <= 400.01 && r.Y + r.H <= 300.01, "dentro da área");
+        }
+    }
+}

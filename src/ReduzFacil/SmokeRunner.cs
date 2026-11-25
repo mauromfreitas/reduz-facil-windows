@@ -232,6 +232,16 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
             Log.Info("TESTE colar: área de transferência indisponível aqui (" + ex.Message + ")");
         }
 
+        // Mapa do disco e Início
+        window.ShowPage("peso");
+        window.Peso.ShowMapMode();
+        await window.Peso.BuildMapAsync(samples);
+        await Task.Delay(500);
+        await Shot(shots, "15-mapa-do-disco");
+        window.ShowPage("inicio");
+        await Task.Delay(4000);
+        await Shot(shots, "16-inicio");
+
         // Tema escuro
         ThemeManager.Apply("escuro");
         window.ShowReduzir();
