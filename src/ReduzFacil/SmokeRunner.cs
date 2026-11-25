@@ -134,7 +134,8 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
         Check(!WindowsIntegration.IsShellMenuInstalled(out _), "menu do Explorer removido");
 
         // 7. Pasta vigiada
-        var watch = Path.Combine(s.Data.Root, "teste-vigiada");
+        // Fora da ReduzFacil-dados: a pasta vigiada ignora de propósito o que estiver lá dentro.
+        var watch = Path.Combine(s.Data.ExeDir, "teste-vigiada");
         Directory.CreateDirectory(watch);
         s.Settings.Watch.Enabled = true;
         s.Settings.Watch.Folder = watch;
