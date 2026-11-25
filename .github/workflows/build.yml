@@ -1,0 +1,142 @@
+name: Build
+
+# - Todo push e pull request: baixa os motores, testa o núcleo com arquivos de verdade,
+#   compila o .exe único, testa o .exe num Windows limpo e guarda o .exe como artefato.
+# - Push na main com uma versão nova no .csproj (VersionPrefix/VersionSuffix) que ainda não
+#   tem release: publica o .exe em Releases e cria a tag vX.Y.Z[-sufixo].
+# - Tag vX.Y.Z[-sufixo] enviada à mão: também publica.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Definir versão
+        id: ver
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content src/ReduzFacil/ReduzFacil.csproj
+          $pg = $proj.Project.PropertyGroup | Where-Object { $_.VersionPrefix } | Select-Object -First 1
+          $declared = if ($pg.VersionSuffix) { "$($pg.VersionPrefix)-$($pg.VersionSuffix)" } else { "$($pg.VersionPrefix)" }
+
+          $release = $false
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $full = $env:GITHUB_REF_NAME.TrimStart('v'); $release = $true
+          } elseif ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF_NAME -eq 'main' -and -not (git tag -l "v$declared")) {
+            $full = $declared; $release = $true
+          } else {
+            $sep = if ($declared.Contains('-')) { '.' } else { '-' }
+            $full = "$declared${sep}dev.$($env:GITHUB_RUN_NUMBER)"
+          }
+          if ($full -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "Versão inválida: $full" }
+          $parts = $full.Split('-', 2)
+          $suffix = if ($parts.Length -gt 1) { $parts[1] } else { '' }
+          "full=$full" >> $env:GITHUB_OUTPUT
+          "prefix=$($parts[0])" >> $env:GITHUB_OUTPUT
+          "suffix=$suffix" >> $env:GITHUB_OUTPUT
+          "release=$($release.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          "prerelease=$(if ($suffix) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+          Write-Host "::notice title=versao::$full (release: $release)"
+
+      - name: Baixar motores (FFmpeg, ImageMagick, Ghostscript)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./tools/baixar-motores.ps1 -Dest engine-src
+
+      - name: Testar o núcleo com arquivos de verdade
+        shell: pwsh
+        run: |
+          $pasta = Join-Path $env:RUNNER_TEMP 'testes-nucleo'
+          dotnet run --project tests/ReduzFacil.Tests -c Release -- --engine "$PWD/engine-src" --pasta $pasta
+          $code = $LASTEXITCODE
+          Get-Content (Join-Path $pasta 'resultado.txt') -ErrorAction SilentlyContinue | Select-Object -Last 1 | ForEach-Object { Write-Host "::notice title=testes do nucleo::$_" }
+          Get-Content (Join-Path $pasta 'resultado.txt') -ErrorAction SilentlyContinue | Where-Object { $_ -match 'FALHOU' } | ForEach-Object { Write-Host "::error title=teste::$_" }
+          exit $code
+
+      - name: Publicar .exe único
+        shell: pwsh
+        run: |
+          dotnet publish src/ReduzFacil/ReduzFacil.csproj -c Release -o publish `
+            "-p:VersionPrefix=${{ steps.ver.outputs.prefix }}" `
+            "-p:VersionSuffix=${{ steps.ver.outputs.suffix }}" `
+            "-p:RfEngineSrc=$PWD\engine-src\" | Tee-Object -Variable out
+          $code = $LASTEXITCODE
+          $out | Select-String 'Reduz F.cil:' | ForEach-Object { Write-Host "::notice title=build::$($_.Line.Trim())" }
+          $out | Select-String ' error ' | Select-Object -First 20 | ForEach-Object { Write-Host "::error title=compilacao::$($_.Line.Trim())" }
+          exit $code
+
+      - name: Conferir que saiu um arquivo só
+        shell: pwsh
+        run: |
+          Get-ChildItem publish -Recurse -File | ForEach-Object { Write-Host ("::notice title=saida::{0} ({1:N1} MB)" -f $_.Name, ($_.Length / 1MB)) }
+          $extra = Get-ChildItem publish -File | Where-Object { $_.Name -ne 'ReduzFacil.exe' -and $_.Extension -ne '.pdb' }
+          if ($extra) { throw "Arquivos além do .exe na saída: $($extra.Name -join ', ')" }
+          $exe = Get-Item publish/ReduzFacil.exe
+          $info = $exe.VersionInfo
+          Write-Host ("::notice title=exe::{0:N1} MB - {1} {2}" -f ($exe.Length / 1MB), $info.ProductName, $info.ProductVersion)
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item $exe "dist/ReduzFacil-${{ steps.ver.outputs.full }}.exe"
+
+      - name: Testar o .exe num Windows limpo
+        shell: pwsh
+        run: ./tests/smoke.ps1 -Exe publish/ReduzFacil.exe -Amostras (Join-Path $env:RUNNER_TEMP 'testes-nucleo/entrada')
+
+      - name: Publicar capturas de tela no ramo "capturas"
+        if: always() && github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $src = Join-Path $env:RUNNER_TEMP 'capturas'
+          if (-not (Test-Path $src)) { exit 0 }
+          $nucleo = Join-Path $env:RUNNER_TEMP 'testes-nucleo/resultado.txt'
+          if (Test-Path $nucleo) { Copy-Item $nucleo (Join-Path $src 'testes-do-nucleo.txt') }
+          $dst = Join-Path $env:RUNNER_TEMP 'ramo-capturas'
+          git worktree add --orphan -b capturas-tmp $dst
+          Copy-Item "$src/*" $dst
+          Set-Content (Join-Path $dst 'README.md') "Capturas do teste automático de ${{ github.sha }} (${{ steps.ver.outputs.full }})."
+          Push-Location $dst
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Capturas ${{ steps.ver.outputs.full }}"
+          git push -f origin HEAD:capturas
+          Pop-Location
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ReduzFacil-${{ steps.ver.outputs.full }}
+          path: dist/*.exe
+          retention-days: 14
+
+      - name: Publicar em Releases
+        if: steps.ver.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.full }}
+          target_commitish: ${{ github.sha }}
+          name: Reduz Fácil ${{ steps.ver.outputs.full }}
+          files: dist/*.exe
+          prerelease: ${{ steps.ver.outputs.prerelease }}
+          generate_release_notes: false
+          body: |
+            Baixe o arquivo **ReduzFacil-${{ steps.ver.outputs.full }}.exe** abaixo, coloque numa pasta sua (ex.: Documentos\Reduz Fácil) e abra com dois cliques.
+
+            Na primeira vez, o Windows pode mostrar "O Windows protegeu o computador": clique em **Mais informações** e depois em **Executar assim mesmo**.
+            A primeira abertura demora alguns segundos (prepara os motores na pasta ReduzFacil-dados).
+
+            O que mudou: veja o [CHANGELOG](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md).

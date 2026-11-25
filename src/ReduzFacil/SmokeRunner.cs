@@ -82,8 +82,9 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
             Log.Info($"TESTE item: {i.Name} {i.Status} {i.Result?.OriginalBytes}->{i.Result?.FinalBytes} {i.Result?.EngineNote} {i.Error}");
         var items = s.Queue.Items;
         Check(items.Count >= 5, $"amostras na fila ({items.Count})");
-        Check(items.Where(i => !i.Name.StartsWith("quebrado", StringComparison.OrdinalIgnoreCase)).All(i => i.Status is JobStatus.Done or JobStatus.KeptOriginal), "todas as amostras boas reduziram");
-        Check(items.Where(i => i.Name.StartsWith("quebrado", StringComparison.OrdinalIgnoreCase)).All(i => i.Status == JobStatus.Failed), "arquivo quebrado deu erro");
+        static bool Bad(QueueItem i) => i.Name.StartsWith("quebrado", StringComparison.OrdinalIgnoreCase) || i.Name.StartsWith("com senha", StringComparison.OrdinalIgnoreCase);
+        Check(items.Where(i => !Bad(i)).All(i => i.Status is JobStatus.Done or JobStatus.KeptOriginal), "todas as amostras boas reduziram");
+        Check(items.Where(Bad).All(i => i.Status == JobStatus.Failed && !string.IsNullOrEmpty(i.Error)), "quebrado e PDF com senha deram erro com mensagem");
         foreach (var i in items.Where(i => i.Status == JobStatus.Done))
             Check(File.Exists(i.Result!.OutputPath) && File.Exists(i.Path), $"saída e original existem: {i.Name}");
         await Shot(shots, "03-fila-pronta");

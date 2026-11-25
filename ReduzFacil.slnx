@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReduzFacil.Core/ReduzFacil.Core.csproj" />
+    <Project Path="src/ReduzFacil/ReduzFacil.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ReduzFacil.Tests/ReduzFacil.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -34,6 +34,7 @@ public sealed class AppServices : IDisposable
     public AppServices(DataPaths data, EngineInfo engine)
     {
         Data = data;
+        PreviewMaker.Clean(data.WorkDir);
         _store = new SettingsStore(data.SettingsFile);
         Settings = _store.Load();
         History = new HistoryStore(data.Root);
@@ -157,5 +158,6 @@ public sealed class AppServices : IDisposable
         _watcher?.Dispose();
         Queue.CancelAll();
         Save();
+        PreviewMaker.Clean(Data.WorkDir);
     }
 }
