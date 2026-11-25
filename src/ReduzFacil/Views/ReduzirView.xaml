@@ -1,0 +1,212 @@
+<UserControl x:Class="ReduzFacil.Views.ReduzirView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="Vis" />
+    </UserControl.Resources>
+    <Grid Margin="28,24,28,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="Reduzir arquivos" Style="{StaticResource H1}" />
+            <TextBlock Text="Fotos, vídeos, áudios e PDFs. Tudo é feito neste PC: nada vai para a internet e o original nunca é alterado."
+                       Style="{StaticResource MutedText}" />
+        </StackPanel>
+
+        <!-- Como reduzir -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,14">
+            <StackPanel>
+                <WrapPanel x:Name="PresetPanel" />
+                <TextBlock x:Name="PresetHint" Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+
+                <WrapPanel x:Name="LevelRow" Margin="0,2,0,0">
+                    <TextBlock Text="Nível:" VerticalAlignment="Center" Margin="0,0,10,8" Foreground="{StaticResource Muted}" />
+                    <RadioButton x:Name="LvlMax" Style="{StaticResource Chip}" GroupName="lvl" Content="Máxima qualidade" Checked="OnLevel" />
+                    <RadioButton x:Name="LvlEq" Style="{StaticResource Chip}" GroupName="lvl" Content="Equilibrado" Checked="OnLevel" />
+                    <RadioButton x:Name="LvlMin" Style="{StaticResource Chip}" GroupName="lvl" Content="Menor tamanho" Checked="OnLevel" />
+                    <StackPanel x:Name="MetaBox" Orientation="Horizontal" Margin="12,0,0,8" VerticalAlignment="Center">
+                        <TextBlock Text="Meta:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource Muted}" />
+                        <TextBox x:Name="MetaText" Width="70" TextChanged="OnMetaChanged" />
+                        <TextBlock Text="MB por arquivo" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{StaticResource Muted}" />
+                    </StackPanel>
+                </WrapPanel>
+
+                <WrapPanel x:Name="ProfileRow" Margin="0,2,0,0" />
+
+                <Expander x:Name="MoreExpander" Header="Mais opções" Margin="0,4,0,0">
+                    <Grid Margin="4,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Vídeo" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <ComboBox x:Name="CodecBox" SelectionChanged="OnOptionChanged">
+                                    <ComboBoxItem Content="H.264 — abre em tudo" />
+                                    <ComboBoxItem Content="H.265 — ainda menor" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Resolução máx." Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <ComboBox x:Name="VideoResBox" SelectionChanged="OnOptionChanged">
+                                    <ComboBoxItem Content="A do nível" Tag="0" />
+                                    <ComboBoxItem Content="Original (sem reduzir)" Tag="100000" />
+                                    <ComboBoxItem Content="1080p (Full HD)" Tag="1080" />
+                                    <ComboBoxItem Content="720p (HD)" Tag="720" />
+                                    <ComboBoxItem Content="480p" Tag="480" />
+                                </ComboBox>
+                            </StackPanel>
+                            <CheckBox x:Name="HwCheck" Content="Usar a placa de vídeo (bem mais rápido)" Checked="OnOptionChanged" Unchecked="OnOptionChanged" />
+
+                            <TextBlock Text="PDF e áudio" FontWeight="SemiBold" Margin="0,12,0,6" />
+                            <CheckBox x:Name="GrayCheck" Content="PDF em tons de cinza (documentos escaneados ficam ainda menores)" Checked="OnOptionChanged" Unchecked="OnOptionChanged" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Text="Áudio" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <ComboBox x:Name="AudioBox" SelectionChanged="OnOptionChanged">
+                                    <ComboBoxItem Content="Automático (MP3)" />
+                                    <ComboBoxItem Content="MP3" />
+                                    <ComboBoxItem Content="M4A (AAC)" />
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Imagem" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <ComboBox x:Name="ImgFmtBox" SelectionChanged="OnOptionChanged">
+                                    <ComboBoxItem Content="Automático (JPG)" />
+                                    <ComboBoxItem Content="JPG" />
+                                    <ComboBoxItem Content="WebP" />
+                                    <ComboBoxItem Content="Manter o formato" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Tamanho máx." Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <ComboBox x:Name="ImgSizeBox" SelectionChanged="OnOptionChanged">
+                                    <ComboBoxItem Content="O do nível" Tag="0" />
+                                    <ComboBoxItem Content="Original (sem reduzir)" Tag="100000" />
+                                    <ComboBoxItem Content="3840 px (4K)" Tag="3840" />
+                                    <ComboBoxItem Content="2560 px" Tag="2560" />
+                                    <ComboBoxItem Content="1920 px (Full HD)" Tag="1920" />
+                                    <ComboBoxItem Content="1280 px" Tag="1280" />
+                                    <ComboBoxItem Content="1024 px" Tag="1024" />
+                                </ComboBox>
+                            </StackPanel>
+                            <TextBlock Text="Privacidade" FontWeight="SemiBold" Margin="0,12,0,6" />
+                            <CheckBox x:Name="PrivacyCheck" Content="Remover localização (GPS) e dados da câmera das fotos e vídeos" Checked="OnOptionChanged" Unchecked="OnOptionChanged" />
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button Content="Salvar como perfil…" Style="{StaticResource Small}" Margin="0" Click="OnSaveProfile" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Expander>
+            </StackPanel>
+        </Border>
+
+        <!-- Área para soltar -->
+        <Grid Grid.Row="2" x:Name="DropZone" Margin="0,0,0,12" MinHeight="70">
+            <Rectangle RadiusX="12" RadiusY="12" Fill="White" Stroke="#9CA3AF" StrokeThickness="2" StrokeDashArray="5 3" />
+            <Grid Margin="18,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock x:Name="DropTitle" Text="Arraste fotos, vídeos, áudios, PDFs ou pastas para cá" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock x:Name="DropSub" Text="Ou clique com o botão direito num arquivo no Explorer → Reduzir com Reduz Fácil (ligue nas Configurações)."
+                               Style="{StaticResource MutedText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Escolher arquivos" Style="{StaticResource Primary}" Click="OnPickFiles" />
+                    <Button Content="Escolher pasta" Click="OnPickFolder" Margin="0" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Fila -->
+        <ListBox Grid.Row="3" x:Name="QueueList" BorderThickness="0" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch"
+                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0,0,0,8" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="12,10" ToolTip="{Binding Tooltip}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" CornerRadius="8" Background="{Binding Tint}" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding Glyph}" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe UI Emoji" />
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Margin="0,5,0,0"
+                                             Visibility="{Binding IsRunning, Converter={StaticResource Vis}}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="150">
+                                <TextBlock Text="{Binding Sizes}" HorizontalAlignment="Right" FontSize="13" />
+                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource AccentDark}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="Abrir" Style="{StaticResource Small}" Tag="{Binding}" Click="OnOpen"
+                                        Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />
+                                <Button Content="Pasta" Style="{StaticResource Small}" Tag="{Binding}" Click="OnFolder"
+                                        Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />
+                                <Button Content="Comparar" Style="{StaticResource Small}" Tag="{Binding}" Click="OnCompare"
+                                        Visibility="{Binding CanCompare, Converter={StaticResource Vis}}" />
+                                <Button Content="Ajustes" Style="{StaticResource Small}" Tag="{Binding}" Click="OnEdit"
+                                        ToolTip="Cortar trecho, girar, tirar o som ou extrair só o áudio"
+                                        Visibility="{Binding CanEdit, Converter={StaticResource Vis}}" />
+                                <Button Content="Tentar de novo" Style="{StaticResource Small}" Tag="{Binding}" Click="OnRetry"
+                                        Visibility="{Binding CanRetry, Converter={StaticResource Vis}}" />
+                                <Button Content="✕" Style="{StaticResource DangerSmall}" Tag="{Binding}" Click="OnRemove" ToolTip="Cancelar / tirar da lista" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Rodapé -->
+        <Grid Grid.Row="4" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="Summary" VerticalAlignment="Center" Style="{StaticResource MutedText}" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <CheckBox x:Name="AutoStartCheck" Content="Começar sozinho" VerticalAlignment="Center" Margin="0,0,14,0"
+                          Checked="OnAutoStart" Unchecked="OnAutoStart" />
+                <Button x:Name="StartBtn" Content="Iniciar" Style="{StaticResource Primary}" Click="OnStart" />
+                <Button x:Name="PauseBtn" Content="Pausar" Click="OnPause" />
+                <Button x:Name="CancelAllBtn" Content="Cancelar tudo" Click="OnCancelAll" />
+                <Button x:Name="ClearBtn" Content="Limpar concluídos" Click="OnClear" Margin="0" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

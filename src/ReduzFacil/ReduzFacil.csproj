@@ -1,0 +1,127 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ============================================================
+       Reduz Fácil para Windows
+       Um único .exe portátil (win-x64, self-contained, single-file).
+       Os motores (FFmpeg, ImageMagick, Ghostscript) e as DLLs nativas do WPF
+       vão dentro do .exe como um zip e são extraídos na primeira execução
+       para ReduzFacil-dados\engine\ (ao lado do .exe).
+       A pasta com os motores (engine-src) é baixada pelo GitHub Actions:
+       veja .github/workflows/build.yml e tools/baixar-motores.ps1.
+       ============================================================ -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>ReduzFacil</RootNamespace>
+    <AssemblyName>ReduzFacil</AssemblyName>
+    <StartupObject>ReduzFacil.Program</StartupObject>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Versão: mudou aqui e ainda não existe release com esse número? O GitHub Actions publica em Releases. -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Reduz Fácil</Product>
+    <AssemblyTitle>Reduz Fácil</AssemblyTitle>
+    <Description>Reduz Fácil para Windows</Description>
+    <Company>Reduz Fácil</Company>
+    <Copyright>© 2026 Mauro Freitas</Copyright>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
+    <SatelliteResourceLanguages>pt-BR</SatelliteResourceLanguages>
+
+    <!-- Arquivo único, sem instalar nada -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+    <PublishReadyToRun>false</PublishReadyToRun>
+
+    <!-- Onde o workflow deixa os motores baixados -->
+    <RfEngineSrc Condition="'$(RfEngineSrc)' == ''">$(MSBuildThisFileDirectory)..\..\engine-src\</RfEngineSrc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WPF e Windows Forms juntos: só usamos o ícone da bandeja do Windows Forms -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App.xaml como Page: quem cria o App é o Program.Main (prepara pasta e motor antes do WPF) -->
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Switch.System.Windows.Input.Stylus.DisableStylusAndTouchSupport" Value="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReduzFacil.Core\ReduzFacil.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\logo.png" />
+  </ItemGroup>
+
+  <!-- ============================================================
+       Motor (FFmpeg + ImageMagick + Ghostscript + DLLs nativas do WPF)
+       ============================================================ -->
+  <PropertyGroup>
+    <RfEngineDir>$(BaseIntermediateOutputPath)engine\</RfEngineDir>
+    <RfEngineStage>$(RfEngineDir)stage\</RfEngineStage>
+    <RfEngineZip>$(RfEngineDir)engine.zip</RfEngineZip>
+  </PropertyGroup>
+
+  <!-- Tira as DLLs nativas do WPF (*_cor3.dll) da saída: elas vão para o motor -->
+  <Target Name="RfTakeWpfNative" AfterTargets="ResolveRuntimePackAssets">
+    <ItemGroup>
+      <RfWpfNative Include="@(RuntimePackAsset)" Condition="'%(RuntimePackAsset.AssetType)' == 'native' and $([System.String]::Copy('%(RuntimePackAsset.Filename)').ToLowerInvariant().EndsWith('_cor3'))" />
+      <RuntimePackAsset Remove="@(RfWpfNative)" />
+    </ItemGroup>
+    <Message Importance="high" Text="Reduz Fácil: DLLs nativas do WPF no motor: @(RfWpfNative->'%(Filename)%(Extension)', ', ')" />
+  </Target>
+
+  <Target Name="RfDropWpfNativeFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_RfDropped Include="@(ResolvedFileToPublish)" Condition="$([System.String]::Copy('%(ResolvedFileToPublish.Filename)').ToLowerInvariant().EndsWith('_cor3'))" />
+      <ResolvedFileToPublish Remove="@(_RfDropped)" />
+    </ItemGroup>
+    <Message Importance="high" Text="Reduz Fácil: fora da publicação: @(_RfDropped->'%(Filename)%(Extension)', ', ')" />
+  </Target>
+
+  <Target Name="RfBuildEngine" BeforeTargets="PrepareResourceNames">
+    <Error Condition="'@(RfWpfNative)' == ''" Text="As DLLs nativas do WPF não foram encontradas para o motor (RuntimePackAsset *_cor3)." />
+    <Error Condition="!Exists('$(RfEngineSrc)ffmpeg\ffmpeg.exe') or !Exists('$(RfEngineSrc)magick\magick.exe') or !Exists('$(RfEngineSrc)gs\gswin64c.exe')"
+           Text="Motores não encontrados em $(RfEngineSrc). Rode tools\baixar-motores.ps1 antes de compilar." />
+    <ItemGroup>
+      <RfEngineFile Include="$(RfEngineSrc)**\*" />
+    </ItemGroup>
+    <RemoveDir Directories="$(RfEngineStage)" />
+    <Copy SourceFiles="@(RfEngineFile)" DestinationFiles="@(RfEngineFile->'$(RfEngineStage)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(RfWpfNative)" DestinationFolder="$(RfEngineStage)wpf" />
+    <Delete Files="$(RfEngineZip)" />
+    <ZipDirectory SourceDirectory="$(RfEngineStage)" DestinationFile="$(RfEngineZip)" Overwrite="true" />
+    <GetFileHash Files="$(RfEngineZip)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="RfEngineHash" />
+    </GetFileHash>
+    <ItemGroup>
+      <EmbeddedResource Include="$(RfEngineZip)" LogicalName="ReduzFacil.engine.zip" WithCulture="false" Type="Non-Resx" />
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>EngineHash</_Parameter1>
+        <_Parameter2>$(RfEngineHash)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+    <Message Importance="high" Text="Reduz Fácil: motor empacotado (@(RfEngineFile->Count()) arquivos, $(RfEngineHash))" />
+  </Target>
+
+</Project>

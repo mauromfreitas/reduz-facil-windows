@@ -255,3 +255,26 @@ public static class QueueTests
         Assert.Equal(70, Format.SavingPercent(1000, 300), "70%");
     }
 }
+
+public static class PreviewTests
+{
+    [Teste("antes e depois: foto, vídeo (trecho) e PDF geram imagens para comparar")]
+    public static async Task AntesDepois()
+    {
+        var pm = new PreviewMaker(Env.NewContext());
+        var img = await pm.MakeAsync(Env.F(Fixtures.Photo), new CompressOptions(), null, default);
+        Assert.True(File.Exists(img.BeforeImage) && File.Exists(img.AfterImage) && img.FinalBytes < img.OriginalBytes, "foto");
+        var vid = await pm.MakeAsync(Env.F(Fixtures.Video), new CompressOptions { TargetBytes = 3 * 1024 * 1024 }, null, default);
+        Assert.True(File.Exists(vid.BeforeImage) && File.Exists(vid.AfterImage) && vid.Estimated, "vídeo");
+        Console.WriteLine($"      vídeo estimado: {Format.Bytes(vid.FinalBytes)} ({vid.Note})");
+        Assert.True(vid.FinalBytes is > 1_500_000 and < 4_000_000, "estimativa perto da meta de 3 MB");
+        var pdf = await pm.MakeAsync(Env.F(Fixtures.Scanned), new CompressOptions(), null, default);
+        Assert.True(File.Exists(pdf.BeforeImage) && File.Exists(pdf.AfterImage), "pdf");
+        if (Fixtures.HasHeic)
+        {
+            var heic = await pm.MakeAsync(Env.F(Fixtures.Heic), new CompressOptions(), null, default);
+            Assert.True(heic.BeforeImage.EndsWith(".png"), "HEIC vira PNG para a tela");
+        }
+        PreviewMaker.Clean(Env.Work);
+    }
+}
