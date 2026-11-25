@@ -27,6 +27,9 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
 
     public async Task RunAsync()
     {
+        // O padrão agora é esperar o Iniciar; o teste automático precisa que a fila ande sozinha (em todos os modos).
+        s.Settings.AutoStart = true;
+        s.ApplyQueueSettings();
         try
         {
             if (o.UpdateFrom is { } newExe)
@@ -73,9 +76,6 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
 
     private async Task FullAsync()
     {
-        // O padrão agora é esperar o Iniciar; o teste automático precisa que a fila ande sozinha.
-        s.Settings.AutoStart = true;
-        s.ApplyQueueSettings();
         var shots = o.ShotsDir ?? Path.Combine(s.Data.Root, "capturas");
         Directory.CreateDirectory(shots);
         Check(s.Tools.Missing().Length == 0, "motores presentes: " + string.Join(",", s.Tools.Missing()));
