@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Núcleo do Reduz Fácil: toda a lógica de compressão, fila, pasta vigiada e "Onde está o peso".
+       Sem pacotes externos: conversa com os motores (FFmpeg, ImageMagick, Ghostscript) por linha de comando.
+       Roda em Windows e Linux (os testes rodam nos dois). -->
+  <PropertyGroup>
+    <TargetFramework>$(CoreTfm)</TargetFramework>
+    <RootNamespace>ReduzFacil.Core</RootNamespace>
+    <AssemblyName>ReduzFacil.Core</AssemblyName>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ReduzFacil.Tests" />
+  </ItemGroup>
+
+</Project>

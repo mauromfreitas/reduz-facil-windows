@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Testes do núcleo com arquivos de verdade (fotos, vídeos, PDFs e áudios gerados na hora).
+       Sem pacotes de teste: um executável simples que retorna 0 quando tudo passa.
+       Uso: dotnet run (opções: engine PASTA, filtro TEXTO) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(CoreTfm)</TargetFramework>
+    <RootNamespace>ReduzFacil.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ReduzFacil.Core\ReduzFacil.Core.csproj" />
+  </ItemGroup>
+</Project>
