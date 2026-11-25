@@ -30,11 +30,11 @@
             <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
                     <TextBlock Text="Desempenho" Style="{StaticResource H2}" />
-                    <StackPanel Orientation="Horizontal">
+                    <DockPanel>
                         <TextBlock Text="Placa de vídeo" Style="{StaticResource FieldLabel}" />
-                        <TextBlock x:Name="HwText" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="440" />
-                        <Button Content="Detectar de novo" Style="{StaticResource Small}" Margin="12,0,0,0" Click="OnRedetect" />
-                    </StackPanel>
+                        <Button DockPanel.Dock="Right" Content="Detectar de novo" Style="{StaticResource Small}" Margin="12,0,0,0" VerticalAlignment="Center" Click="OnRedetect" />
+                        <TextBlock x:Name="HwText" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </DockPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <TextBlock Text="Vídeos ao mesmo tempo" Style="{StaticResource FieldLabel}" />
                         <ComboBox x:Name="VideosBox" MinWidth="80" SelectionChanged="OnPerf" />

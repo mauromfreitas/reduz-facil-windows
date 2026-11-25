@@ -180,7 +180,7 @@
 
     <!-- Linha de configuração: rótulo à esquerda, controle à direita -->
     <Style TargetType="TextBlock" x:Key="FieldLabel">
-        <Setter Property="Width" Value="210" />
+        <Setter Property="Width" Value="270" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Foreground" Value="{StaticResource Muted}" />
     </Style>
