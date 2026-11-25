@@ -36,6 +36,9 @@ public sealed class AppSettings
     public double CustomTargetMb { get; set; } = 5;
 
     public bool AutoStart { get; set; } = true;
+
+    /// <summary>Com meta (WhatsApp, e-mail…): vídeo longo é dividido em partes do tamanho da meta em vez de perder qualidade.</summary>
+    public bool SplitVideos { get; set; }
     public int VideosAtOnce { get; set; } = 1;
     public int OthersAtOnce { get; set; } = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
 
@@ -68,8 +71,11 @@ public sealed class AppSettings
     public CompressOptions OptionsFor(string? presetOrProfile, double? customMb = null)
     {
         var profile = Profiles.FirstOrDefault(p => string.Equals(p.Name, presetOrProfile, StringComparison.OrdinalIgnoreCase));
-        if (profile is not null) return Build(profile.Options, profile.PresetId, profile.TargetMb);
-        return Build(Options, presetOrProfile ?? PresetId, customMb ?? CustomTargetMb);
+        var o = profile is not null
+            ? Build(profile.Options, profile.PresetId, profile.TargetMb)
+            : Build(Options, presetOrProfile ?? PresetId, customMb ?? CustomTargetMb);
+        if (SplitVideos && o.TargetBytes is { } t) o.SplitPartBytes = t;
+        return o;
     }
 
     public static CompressOptions Build(CompressOptions baseOptions, string presetId, double? customMb)

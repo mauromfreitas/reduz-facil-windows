@@ -22,4 +22,9 @@
 | 18 | "Onde está o peso" estima pelo cabeçalho (fotos, WAV/FLAC, PDF) e ffprobe (vídeos); mostra só ganho ≥ 20% e ≥ 300 KB | Varre milhares de arquivos rápido; só o que vale a pena. |
 | 19 | Originais para a Lixeira só por botão, com confirmação, só de itens reduzidos com sucesso e menores | É o único jeito de liberar espaço de verdade, e é reversível. |
 | 20 | Uma instância; aberturas seguintes mandam os argumentos por "cano" nomeado | O Explorer abre um processo por arquivo selecionado. |
-| 21 | Sem assinatura digital e sem atualização automática na 1.0 | Uso pessoal. |
+| 21 | Sem assinatura digital | Uso pessoal. |
+| 22 | Atualização com um clique pelas Releases públicas do GitHub: confere tamanho, SHA-256 e cabeçalho do .exe; troca renomeando o .exe aberto para `.antigo` (o Windows permite) e reabre a versão nova, que espera a antiga fechar e apaga o `.antigo` | Sem instalador e sem serviço; se algo falhar, volta o .exe antigo. Pré-versões nunca atualizam sozinhas. |
+| 23 | Repetidos: idênticos por tamanho → início → SHA-256; parecidas por dHash de 128 bits (horizontal + vertical, tolerância 12 bits), ignorando fotos quase lisas | Rápido e com poucos falsos positivos; parecidas sempre com aviso e desmarcadas. |
+| 24 | Dividir vídeo: número mínimo de partes para cada uma ter bitrate "bom" na resolução de saída (até 720p) | Partes nítidas e do tamanho certo, sem o usuário calcular nada. |
+| 25 | Ctrl+V de print salva em `ReduzFacil-dados\colados` e devolve o resultado copiado | Fluxo "print → WhatsApp" em dois atalhos. |
+| 26 | Tema por pincéis dinâmicos (DynamicResource) trocados em tempo real; barra de título escura via DWM | Troca sem reabrir; "Igual ao Windows" acompanha a mudança do sistema. |

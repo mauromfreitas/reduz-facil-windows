@@ -20,7 +20,7 @@
             <Border Style="{StaticResource CardBorder}" Margin="0,0,10,10">
                 <StackPanel>
                     <TextBlock Text="Espaço economizado" Style="{StaticResource MutedText}" />
-                    <TextBlock x:Name="TotSaved" FontSize="26" FontWeight="SemiBold" Foreground="{StaticResource AccentDark}" />
+                    <TextBlock x:Name="TotSaved" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource AccentDark}" />
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource CardBorder}" Margin="0,0,10,10">
@@ -53,7 +53,7 @@
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="10,8" ToolTip="{Binding Tooltip}">
+                    <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="10,8" ToolTip="{Binding Tooltip}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="42" />
@@ -66,11 +66,11 @@
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding When}" Foreground="{StaticResource Muted}" FontSize="12" />
+                                <TextBlock Text="{Binding When}" Foreground="{DynamicResource Muted}" FontSize="12" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="150">
                                 <TextBlock Text="{Binding Sizes}" HorizontalAlignment="Right" FontSize="13" />
-                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource AccentDark}" />
+                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{DynamicResource AccentDark}" />
                             </StackPanel>
                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button Content="Abrir" Style="{StaticResource Small}" Tag="{Binding}" Click="OnOpen" Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />

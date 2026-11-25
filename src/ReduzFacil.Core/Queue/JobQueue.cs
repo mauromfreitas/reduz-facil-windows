@@ -8,7 +8,7 @@ namespace ReduzFacil.Core.Queue;
 
 public enum JobStatus { Waiting, Running, Done, KeptOriginal, Failed, Canceled }
 
-public enum JobOrigin { Manual, Watch, Scan, ShellMenu }
+public enum JobOrigin { Manual, Watch, Scan, ShellMenu, Paste }
 
 public sealed class QueueItem
 {
@@ -97,11 +97,11 @@ public sealed class JobQueue
         {
             var existing = _items.FirstOrDefault(i => !i.IsFinished && SamePath(i.Path, full));
             if (existing is not null) return existing;
-            // Pasta vigiada sempre começa sozinha (ninguém está olhando para apertar Iniciar).
+            // Pasta vigiada e Ctrl+V sempre começam sozinhos (quem cola quer o resultado já).
             item = new QueueItem
             {
                 Path = full, Kind = kind.Value, Options = options.Clone(), SourceRoot = sourceRoot, Origin = origin, SizeBytes = size,
-                Released = AutoStart || origin == JobOrigin.Watch,
+                Released = AutoStart || origin is JobOrigin.Watch or JobOrigin.Paste,
             };
             _items.Add(item);
         }

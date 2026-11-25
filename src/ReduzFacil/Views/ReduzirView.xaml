@@ -23,17 +23,19 @@
         <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,14">
             <StackPanel>
                 <WrapPanel x:Name="PresetPanel" />
-                <TextBlock x:Name="PresetHint" Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+                <TextBlock x:Name="PresetHint" Style="{StaticResource MutedText}" Margin="0,0,0,4" />
+                <CheckBox x:Name="SplitCheck" Margin="0,0,0,8" Checked="OnSplit" Unchecked="OnSplit"
+                          Content="Vídeo longo: dividir em partes do tamanho da meta (em vez de perder qualidade)" />
 
                 <WrapPanel x:Name="LevelRow" Margin="0,2,0,0">
-                    <TextBlock Text="Nível:" VerticalAlignment="Center" Margin="0,0,10,8" Foreground="{StaticResource Muted}" />
+                    <TextBlock Text="Nível:" VerticalAlignment="Center" Margin="0,0,10,8" Foreground="{DynamicResource Muted}" />
                     <RadioButton x:Name="LvlMax" Style="{StaticResource Chip}" GroupName="lvl" Content="Máxima qualidade" Checked="OnLevel" />
                     <RadioButton x:Name="LvlEq" Style="{StaticResource Chip}" GroupName="lvl" Content="Equilibrado" Checked="OnLevel" />
                     <RadioButton x:Name="LvlMin" Style="{StaticResource Chip}" GroupName="lvl" Content="Menor tamanho" Checked="OnLevel" />
                     <StackPanel x:Name="MetaBox" Orientation="Horizontal" Margin="12,0,0,8" VerticalAlignment="Center">
-                        <TextBlock Text="Meta:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource Muted}" />
+                        <TextBlock Text="Meta:" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{DynamicResource Muted}" />
                         <TextBox x:Name="MetaText" Width="70" TextChanged="OnMetaChanged" />
-                        <TextBlock Text="MB por arquivo" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{StaticResource Muted}" />
+                        <TextBlock Text="MB por arquivo" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource Muted}" />
                     </StackPanel>
                 </WrapPanel>
 
@@ -49,14 +51,14 @@
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Vídeo" FontWeight="SemiBold" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                                 <ComboBox x:Name="CodecBox" SelectionChanged="OnOptionChanged">
                                     <ComboBoxItem Content="H.264 — abre em tudo" />
                                     <ComboBoxItem Content="H.265 — ainda menor" />
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Resolução máx." Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="Resolução máx." Width="120" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                                 <ComboBox x:Name="VideoResBox" SelectionChanged="OnOptionChanged">
                                     <ComboBoxItem Content="A do nível" Tag="0" />
                                     <ComboBoxItem Content="Original (sem reduzir)" Tag="100000" />
@@ -70,7 +72,7 @@
                             <TextBlock Text="PDF e áudio" FontWeight="SemiBold" Margin="0,12,0,6" />
                             <CheckBox x:Name="GrayCheck" Content="PDF em tons de cinza (documentos escaneados ficam ainda menores)" Checked="OnOptionChanged" Unchecked="OnOptionChanged" />
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                <TextBlock Text="Áudio" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="Áudio" Width="120" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                                 <ComboBox x:Name="AudioBox" SelectionChanged="OnOptionChanged">
                                     <ComboBoxItem Content="Automático (MP3)" />
                                     <ComboBoxItem Content="MP3" />
@@ -81,7 +83,7 @@
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="Imagem" FontWeight="SemiBold" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="Formato" Width="120" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                                 <ComboBox x:Name="ImgFmtBox" SelectionChanged="OnOptionChanged">
                                     <ComboBoxItem Content="Automático (JPG)" />
                                     <ComboBoxItem Content="JPG" />
@@ -90,7 +92,7 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <TextBlock Text="Tamanho máx." Width="120" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                                <TextBlock Text="Tamanho máx." Width="120" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                                 <ComboBox x:Name="ImgSizeBox" SelectionChanged="OnOptionChanged">
                                     <ComboBoxItem Content="O do nível" Tag="0" />
                                     <ComboBoxItem Content="Original (sem reduzir)" Tag="100000" />
@@ -114,7 +116,7 @@
 
         <!-- Área para soltar -->
         <Grid Grid.Row="2" x:Name="DropZone" Margin="0,0,0,12" MinHeight="70">
-            <Rectangle RadiusX="12" RadiusY="12" Fill="White" Stroke="#9CA3AF" StrokeThickness="2" StrokeDashArray="5 3" />
+            <Rectangle RadiusX="12" RadiusY="12" Fill="{DynamicResource Card}" Stroke="{DynamicResource DropStroke}" StrokeThickness="2" StrokeDashArray="5 3" />
             <Grid Margin="18,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -122,7 +124,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                     <TextBlock x:Name="DropTitle" Text="Arraste fotos, vídeos, áudios, PDFs ou pastas para cá" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock x:Name="DropSub" Text="Ou clique com o botão direito num arquivo no Explorer → Reduzir com Reduz Fácil (ligue nas Configurações)."
+                    <TextBlock x:Name="DropSub" Text="Ou cole com Ctrl+V (arquivos copiados ou um print), ou use o botão direito no Explorer → Reduzir com Reduz Fácil (ligue nas Configurações)."
                                Style="{StaticResource MutedText}" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -151,7 +153,7 @@
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="12,10" ToolTip="{Binding Tooltip}">
+                    <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="12,10" ToolTip="{Binding Tooltip}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="44" />
@@ -170,17 +172,20 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="150">
                                 <TextBlock Text="{Binding Sizes}" HorizontalAlignment="Right" FontSize="13" />
-                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource AccentDark}" />
+                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{DynamicResource AccentDark}" />
                             </StackPanel>
                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button Content="Abrir" Style="{StaticResource Small}" Tag="{Binding}" Click="OnOpen"
                                         Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />
                                 <Button Content="Pasta" Style="{StaticResource Small}" Tag="{Binding}" Click="OnFolder"
                                         Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />
+                                <Button Content="Copiar" Style="{StaticResource Small}" Tag="{Binding}" Click="OnCopy"
+                                        ToolTip="Copia o arquivo reduzido para colar no WhatsApp, e-mail…"
+                                        Visibility="{Binding CanOpen, Converter={StaticResource Vis}}" />
                                 <Button Content="Comparar" Style="{StaticResource Small}" Tag="{Binding}" Click="OnCompare"
                                         Visibility="{Binding CanCompare, Converter={StaticResource Vis}}" />
                                 <Button Content="Ajustes" Style="{StaticResource Small}" Tag="{Binding}" Click="OnEdit"
-                                        ToolTip="Cortar trecho, girar, tirar o som ou extrair só o áudio"
+                                        ToolTip="Cortar trecho, girar, dividir em partes, tirar o som ou extrair só o áudio"
                                         Visibility="{Binding CanEdit, Converter={StaticResource Vis}}" />
                                 <Button Content="Tentar de novo" Style="{StaticResource Small}" Tag="{Binding}" Click="OnRetry"
                                         Visibility="{Binding CanRetry, Converter={StaticResource Vis}}" />

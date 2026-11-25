@@ -18,7 +18,6 @@ public sealed record LaunchRequest(string[] Files, string? Preset, bool OnlyAdd,
 public sealed class AppServices : IDisposable
 {
     private readonly SettingsStore _store;
-    private FolderWatcher? _watcher;
 
     public DataPaths Data { get; }
     public EngineTools Tools { get; }
@@ -27,7 +26,6 @@ public sealed class AppServices : IDisposable
     public HardwareCatalog Hardware { get; } = new();
     public Compressor Compressor { get; }
     public JobQueue Queue { get; }
-    public string? WatchError { get; private set; }
 
     public event Action? WatchStateChanged;
 
@@ -84,43 +82,55 @@ public sealed class AppServices : IDisposable
             History.Add(r, item.Kind);
     }
 
-    // ---------------- pasta vigiada ----------------
+    // ---------------- pastas vigiadas ----------------
+
+    private readonly List<(WatchSettings Settings, FolderWatcher Watcher)> _watchers = [];
+
+    /// <summary>Erro de cada pasta (pasta apagada, sem permissão), para mostrar nas Configurações.</summary>
+    public Dictionary<WatchSettings, string> WatchErrors { get; } = [];
+
+    public string? WatchError => WatchErrors.Values.FirstOrDefault();
+
+    public int WatchCount => _watchers.Count;
+
+    public bool WatchRunning => _watchers.Count > 0;
+
+    public bool IsWatching(WatchSettings w) => _watchers.Any(x => ReferenceEquals(x.Settings, w));
 
     public void RestartWatcher()
     {
-        _watcher?.Dispose();
-        _watcher = null;
-        WatchError = null;
-        var w = Settings.Watch;
-        if (w.Enabled && !string.IsNullOrWhiteSpace(w.Folder))
+        foreach (var (_, fw) in _watchers) fw.Dispose();
+        _watchers.Clear();
+        WatchErrors.Clear();
+        var outDir = Settings.Output.Mode == OutputMode.Folder && !string.IsNullOrWhiteSpace(Settings.Output.Folder)
+            ? Path.GetFullPath(Settings.Output.Folder).TrimEnd('\\') : null;
+        foreach (var w in Settings.Watches.Where(w => w.Enabled && !string.IsNullOrWhiteSpace(w.Folder)))
         {
+            FolderWatcher? fw = null;
             try
             {
-                var outDir = Settings.Output.Mode == OutputMode.Folder && !string.IsNullOrWhiteSpace(Settings.Output.Folder)
-                    ? Path.GetFullPath(Settings.Output.Folder) : null;
                 // Saída na própria pasta vigiada: quem evita o laço é o sufixo (ignorar a pasta inteira desligaria tudo).
-                if (outDir is not null && string.Equals(outDir.TrimEnd('\\'), Path.GetFullPath(w.Folder).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-                    outDir = null;
-                _watcher = new FolderWatcher(w.Folder, w.IncludeSubfolders, OnWatchedFile, () => EffectiveSuffix,
-                    p => outDir is not null && p.StartsWith(outDir.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
-                _watcher.Start();
+                var ignore = outDir is not null && !string.Equals(outDir, Path.GetFullPath(w.Folder!).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)
+                    ? outDir : null;
+                var settings = w;
+                fw = new FolderWatcher(w.Folder!, w.IncludeSubfolders, p => OnWatchedFile(settings, p), () => EffectiveSuffix,
+                    p => ignore is not null && p.StartsWith(ignore + "\\", StringComparison.OrdinalIgnoreCase));
+                fw.Start();
+                _watchers.Add((w, fw));
             }
             catch (Exception ex)
             {
-                WatchError = ex is DirectoryNotFoundException ? "A pasta vigiada não existe mais." : ex.Message;
-                Log.Warn("Pasta vigiada não ligou: " + ex.Message);
-                _watcher?.Dispose();
-                _watcher = null;
+                WatchErrors[w] = ex is DirectoryNotFoundException ? "a pasta não existe mais" : ex.Message;
+                Log.Warn($"Pasta vigiada {w.Folder} não ligou: {ex.Message}");
+                fw?.Dispose();
             }
         }
         WatchStateChanged?.Invoke();
     }
 
-    public bool WatchRunning => _watcher is not null;
-
-    private void OnWatchedFile(string path)
+    private void OnWatchedFile(WatchSettings w, string path)
     {
-        var options = OptionsFor(Settings.Watch.Profile);
+        var options = OptionsFor(w.Profile);
         Queue.Add(path, options, null, JobOrigin.Watch);
     }
 
@@ -158,11 +168,12 @@ public sealed class AppServices : IDisposable
     }
 
     /// <summary>Opções de teste que levam um valor (o valor não é um arquivo).</summary>
-    private static bool IsValueOption(string a) => a.ToLowerInvariant() is "--teste-auto" or "--capturas" or "--teste-espera";
+    private static bool IsValueOption(string a) => a.ToLowerInvariant() is "--teste-auto" or "--capturas" or "--teste-espera"
+        or "--teste-atualizar" or "--atualizado" or "--esperar-pid";
 
     public void Dispose()
     {
-        _watcher?.Dispose();
+        foreach (var (_, fw) in _watchers) fw.Dispose();
         Queue.CancelAll();
         Save();
         PreviewMaker.Clean(Data.WorkDir);

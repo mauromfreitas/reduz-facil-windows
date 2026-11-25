@@ -29,19 +29,13 @@ public static class KindIcons
         _ => "📁",
     };
 
-    public static Brush Tint(FileKind k) => k switch
+    public static Brush Tint(FileKind k) => (Brush)System.Windows.Application.Current.Resources[k switch
     {
-        FileKind.Image => Freeze(new SolidColorBrush(Color.FromRgb(0xDB, 0xEA, 0xFE))),
-        FileKind.Video => Freeze(new SolidColorBrush(Color.FromRgb(0xFC, 0xE7, 0xF3))),
-        FileKind.Audio => Freeze(new SolidColorBrush(Color.FromRgb(0xFE, 0xF3, 0xC7))),
-        _ => Freeze(new SolidColorBrush(Color.FromRgb(0xFD, 0xE8, 0xE8))),
-    };
-
-    private static Brush Freeze(SolidColorBrush b)
-    {
-        b.Freeze();
-        return b;
-    }
+        FileKind.Image => "TintImage",
+        FileKind.Video => "TintVideo",
+        FileKind.Audio => "TintAudio",
+        _ => "TintPdf",
+    }];
 }
 
 /// <summary>Uma linha da fila na tela.</summary>
@@ -86,8 +80,10 @@ public sealed class QueueItemVm(QueueItem item) : Observable
 
     public string StatusText => Item.Status switch
     {
-        JobStatus.Waiting => Item.Options.HasVideoEdits ? "Esperando · com ajustes" : "Esperando",
+        JobStatus.Waiting => Item.Options.SplitPartBytes is { } sp ? $"Esperando · dividir em partes de {Format.Bytes(sp)}"
+            : Item.Options.HasVideoEdits ? "Esperando · com ajustes" : "Esperando",
         JobStatus.Running => $"Reduzindo… {Item.Progress * 100:0}%",
+        JobStatus.Done when Item.Result is { ExtraOutputs.Count: > 0 } r => $"Pronto · {r.ExtraOutputs.Count + 1} partes" + (r.Warnings.Count > 0 ? " · " + r.Warnings[0] : ""),
         JobStatus.Done => Item.Result?.Warnings.Count > 0 ? "Pronto · " + Item.Result.Warnings[0] : "Pronto",
         JobStatus.KeptOriginal => Item.Result?.Warnings.FirstOrDefault() ?? "Já estava otimizado",
         JobStatus.Failed => Item.Error ?? "Falhou",
@@ -108,7 +104,8 @@ public sealed class QueueItemVm(QueueItem item) : Observable
         get
         {
             var lines = new List<string> { Item.Path };
-            if (Item.Result?.OutputPath is { } o) lines.Add("Salvo em: " + o);
+            if (Item.Result is { } res)
+                foreach (var o in res.AllOutputs) lines.Add("Salvo em: " + o);
             if (Item.Result?.EngineNote is { } n) lines.Add("Como: " + n);
             if (Item.Result?.Warnings is { Count: > 0 } w) lines.AddRange(w);
             return string.Join("\n", lines);
@@ -162,4 +159,100 @@ public sealed class HistoryVm(HistoryEntry e) : Observable
     public string Saving => Entry.KeptOriginal ? "" : $"−{Format.SavingPercent(Entry.OriginalBytes, Entry.FinalBytes)}%";
     public bool CanOpen => Entry.Output is not null && File.Exists(Entry.Output);
     public string Tooltip => Entry.Input + (Entry.Output is null ? "" : "\nSalvo em: " + Entry.Output) + (Entry.Note is null ? "" : "\n" + Entry.Note);
+}
+
+/// <summary>Um grupo de repetidos (idênticos ou fotos parecidas).</summary>
+public sealed class DupGroupVm : Observable
+{
+    public DupGroupVm(DupGroup g, Action onChange)
+    {
+        Group = g;
+        Files = g.Files.Select(f => new DupFileVm(f, g.Exact, onChange)).ToList();
+    }
+
+    public DupGroup Group { get; }
+    public List<DupFileVm> Files { get; }
+
+    public string Title => Group.Exact
+        ? $"Idênticos · {Files.Count} arquivos iguais"
+        : $"⚠  Parecidas — confira antes · {Files.Count} fotos";
+
+    public string Subtitle => Group.Exact
+        ? $"Mesmo conteúdo, byte a byte. Deixando só um, libera {Format.Bytes(Group.Wasted)}."
+        : "Fotos muito parecidas (sequência, mesma foto em outro tamanho). Nada vem marcado: abra e decida.";
+
+    public Brush TitleBrush => (Brush)System.Windows.Application.Current.Resources[Group.Exact ? "Text" : "Warn"];
+    public Brush Frame => (Brush)System.Windows.Application.Current.Resources[Group.Exact ? "Line" : "Warn"];
+}
+
+public sealed class DupFileVm : Observable
+{
+    private static readonly string[] Thumbable = ["jpg", "jpeg", "jfif", "png", "bmp"];
+    private readonly Action _onChange;
+    private bool _selected;
+    private System.Windows.Media.ImageSource? _thumb;
+    private bool _thumbTried;
+
+    public DupFileVm(DupFile f, bool exact, Action onChange)
+    {
+        File = f;
+        _onChange = onChange;
+        // Idênticos: as cópias já vêm marcadas. Parecidas: nunca.
+        _selected = exact && !f.Keep;
+    }
+
+    public DupFile File { get; }
+    public string Name => Path.GetFileName(File.Path);
+    public string Folder => Path.GetDirectoryName(File.Path) ?? "";
+    public FileKind Kind => FileTypes.KindOf(File.Path) ?? FileKind.Image;
+    public string Glyph => KindIcons.Glyph(Kind);
+    public Brush Tint => KindIcons.Tint(Kind);
+    public string Size => Format.Bytes(File.SizeBytes) + (File.Width > 0 ? $" · {File.Width}×{File.Height}" : "") + " · " + File.Modified.ToString("dd/MM/yyyy");
+    public string KeepLabel => File.Keep ? "✓ sugerido manter" : "";
+
+    public bool Selected
+    {
+        get => _selected;
+        set
+        {
+            if (_selected == value) return;
+            _selected = value;
+            Raise();
+            _onChange();
+        }
+    }
+
+    /// <summary>Miniatura pequena, carregada só quando aparece na tela.</summary>
+    public System.Windows.Media.ImageSource? Thumb
+    {
+        get
+        {
+            if (_thumbTried) return _thumb;
+            _thumbTried = true;
+            if (!Thumbable.Contains(FileTypes.Ext(File.Path))) return null;
+            try
+            {
+                var b = new System.Windows.Media.Imaging.BitmapImage();
+                b.BeginInit();
+                b.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                b.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
+                b.DecodePixelWidth = 120;
+                b.UriSource = new Uri(File.Path);
+                b.EndInit();
+                b.Freeze();
+                _thumb = b;
+            }
+            catch
+            {
+                _thumb = null;
+            }
+            return _thumb;
+        }
+    }
+
+    public void SetSelectedSilently(bool v)
+    {
+        _selected = v;
+        Raise(nameof(Selected));
+    }
 }

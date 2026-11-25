@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -28,6 +29,15 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
     {
         try
         {
+            if (o.UpdateFrom is { } newExe)
+            {
+                // Teste da atualização: instala "newExe" como se fosse a versão nova; a nova abre e espera 3 s.
+                Log.Info("TESTE atualizar: instalando " + newExe);
+                AppUpdater.SwapAndRestart(newExe, ["--teste-espera", "3"]);
+                Log.Info("TESTE OK");
+                app.ExitApp(0);
+                return;
+            }
             if (o.WaitSeconds is { } wait)
             {
                 await WaitModeAsync(wait);
@@ -137,10 +147,17 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
         // Fora da ReduzFacil-dados: a pasta vigiada ignora de propósito o que estiver lá dentro.
         var watch = Path.Combine(s.Data.ExeDir, "teste-vigiada");
         Directory.CreateDirectory(watch);
-        s.Settings.Watch.Enabled = true;
-        s.Settings.Watch.Folder = watch;
-        s.Settings.Watch.Profile = "qualidade";
+        var w1 = new Core.Settings.WatchSettings { Enabled = true, Folder = watch, Profile = "qualidade" };
+        var watch2 = Path.Combine(s.Data.ExeDir, "teste-vigiada-2");
+        Directory.CreateDirectory(watch2);
+        var w2 = new Core.Settings.WatchSettings { Enabled = true, Folder = watch2, Profile = "enem" };
+        s.Settings.Watches.Add(w1);
+        s.Settings.Watches.Add(w2);
         s.RestartWatcher();
+        Check(s.WatchCount == 2, $"duas pastas vigiadas ligaram ({s.WatchCount})");
+        window.ShowPage("config");
+        await Task.Delay(600);
+        await Shot(shots, "10-pastas-vigiadas");
         Check(s.WatchRunning, "pasta vigiada ligou");
         var photo = Directory.GetFiles(samples).FirstOrDefault(f => FileTypes.KindOf(f) == FileKind.Image && new FileInfo(f).Length > 1_000_000);
         if (photo is not null)
@@ -154,9 +171,73 @@ public sealed class SmokeRunner(App app, MainWindow window, AppServices s, Smoke
             Check(got?.Status == JobStatus.Done, $"pasta vigiada reduziu a foto nova ({got?.Status})");
             await Task.Delay(4000); // o arquivo gerado não pode entrar de novo
             Check(s.Queue.Items.Count(i => i.Origin == JobOrigin.Watch) == 1, "saída da pasta vigiada não entrou de novo");
+            // Segunda pasta, outro perfil (Enem = 1 MB)
+            File.Copy(photo, Path.Combine(watch2, "inscricao.jpg"));
+            var until2 = DateTime.UtcNow.AddSeconds(30);
+            while (s.Queue.Items.Count(i => i.Origin == JobOrigin.Watch) < 2 && DateTime.UtcNow < until2) await Task.Delay(300);
+            await WaitIdleAsync(TimeSpan.FromMinutes(2));
+            var got2 = s.Queue.Items.LastOrDefault(i => i.Origin == JobOrigin.Watch);
+            Check(got2?.Status == JobStatus.Done && got2.Result!.FinalBytes <= 1024 * 1024 && got2.Name == "inscricao.jpg",
+                $"segunda pasta usou o perfil dela ({got2?.Name} {got2?.Result?.FinalBytes})");
         }
-        s.Settings.Watch.Enabled = false;
+        s.Settings.Watches.Clear();
         s.RestartWatcher();
+
+        // Ferramentas de PDF: juntar fotos e separar páginas
+        window.ShowPage("ferramentas");
+        var imgs = Directory.GetFiles(samples).Where(f => FileTypes.KindOf(f) == FileKind.Image && !Path.GetFileName(f).StartsWith("icone")).Take(3).ToList();
+        window.Ferramentas.AddFiles(imgs);
+        await Shot(shots, "11-ferramentas");
+        var joined = await window.Ferramentas.JoinToAsync(Path.Combine(s.Data.ExeDir, "fotos juntas.pdf"));
+        Check(joined is not null && File.Exists(joined), "juntou fotos num PDF");
+        if (joined is not null)
+        {
+            var parts = await window.Ferramentas.SplitAsync(null, joined);
+            Check(parts.Count == imgs.Count, $"separou uma página por arquivo ({parts.Count})");
+        }
+
+        // Repetidos
+        var dupDir = Path.Combine(s.Data.ExeDir, "teste-repetidos");
+        Directory.CreateDirectory(dupDir);
+        if (photo is not null)
+        {
+            File.Copy(photo, Path.Combine(dupDir, "a.jpg"), true);
+            File.Copy(photo, Path.Combine(dupDir, "copia de a.jpg"), true);
+        }
+        window.ShowPage("peso");
+        window.Peso.ShowDuplicatesMode();
+        await window.Peso.FindDuplicatesAsync(dupDir, true);
+        await Shot(shots, "12-repetidos");
+
+        // Ctrl+V de uma imagem (a área de transferência pode não existir no servidor de teste: só registra)
+        try
+        {
+            window.ShowReduzir();
+            var bmp = new RenderTargetBitmap(800, 600, 96, 96, PixelFormats.Pbgra32);
+            var dv = new DrawingVisual();
+            using (var dc = dv.RenderOpen()) dc.DrawRectangle(Brushes.SteelBlue, null, new Rect(0, 0, 800, 600));
+            bmp.Render(dv);
+            Clipboard.SetImage(bmp);
+            var before = s.Queue.Items.Count;
+            ApplicationCommands.Paste.Execute(null, window);
+            await WaitIdleAsync(TimeSpan.FromMinutes(1));
+            var pasted = s.Queue.Items.Skip(before).FirstOrDefault(i => i.Origin == JobOrigin.Paste);
+            Log.Info($"TESTE colar: {pasted?.Name} {pasted?.Status} copiado={Clipboard.ContainsFileDropList()}");
+        }
+        catch (Exception ex)
+        {
+            Log.Info("TESTE colar: área de transferência indisponível aqui (" + ex.Message + ")");
+        }
+
+        // Tema escuro
+        ThemeManager.Apply("escuro");
+        window.ShowReduzir();
+        await Task.Delay(600);
+        await Shot(shots, "13-escuro-reduzir");
+        window.ShowPage("config");
+        await Task.Delay(600);
+        await Shot(shots, "14-escuro-configuracoes");
+        ThemeManager.Apply("claro");
 
         // 8. Pausa
         if (video is not null)

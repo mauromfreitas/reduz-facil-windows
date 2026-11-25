@@ -20,6 +20,8 @@ public partial class App : Application
 
     public SmokeOptions? Smoke { get; }
     public AppServices Services { get; private set; } = null!;
+    public AppUpdater Updater { get; } = new();
+    private DispatcherTimer? _updateTimer;
 
     public static App Instance => (App)Current;
 
@@ -51,6 +53,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         Services = new AppServices(_data, _engine);
+        ThemeManager.Apply(Services.Settings.Theme);
         WindowsIntegration.RepairIfMoved(Services.Settings.ShellMenu, Services.Settings.StartWithWindows);
         Services.RestartWatcher();
 
@@ -67,7 +70,41 @@ public partial class App : Application
         UpdateTray();
         Handle(req);
 
+        // Veio de uma atualização: avisa.
+        var i = Array.FindIndex(_args, a => a.Equals("--atualizado", StringComparison.OrdinalIgnoreCase));
+        if (i >= 0)
+        {
+            var from = i + 1 < _args.Length ? _args[i + 1] : "?";
+            Log.Info($"Atualizado: de {from} para {AppInfo.Version}");
+            _window.Toast($"Pronto! Atualizado para a versão {AppInfo.Version}.");
+        }
+
         if (Smoke is not null) _ = new SmokeRunner(this, _window, Services, Smoke).RunAsync();
+        else StartUpdateChecks();
+    }
+
+    /// <summary>Procura atualização 5 s depois de abrir e depois uma vez por dia (se o app ficar aberto).</summary>
+    public void StartUpdateChecks()
+    {
+        _updateTimer?.Stop();
+        if (!Services.Settings.CheckUpdates) return;
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _updateTimer.Tick += async (_, _) =>
+        {
+            _updateTimer.Interval = TimeSpan.FromHours(24);
+            await CheckForUpdateAsync(manual: false);
+        };
+        _updateTimer.Start();
+    }
+
+    /// <summary>Devolve true se achou versão nova (e mostra a faixa).</summary>
+    public async Task<bool> CheckForUpdateAsync(bool manual)
+    {
+        var info = await Updater.CheckAsync();
+        if (info is null) return false;
+        _window?.ShowUpdate(info);
+        if (!manual && _window is { IsVisible: false }) _tray?.ShowBalloon("Reduz Fácil", $"Versão {info.Version} disponível. Abra o app para atualizar.");
+        return true;
     }
 
     /// <summary>Outra abertura do .exe (botão direito do Explorer, atalho) mandou argumentos.</summary>
@@ -116,6 +153,8 @@ public partial class App : Application
         }
         _tray?.Dispose();
         _tray = null;
+        _updateTimer?.Stop();
+        Updater.Dispose();
         Log.Info("Fechando");
         Shutdown(exitCode);
     }

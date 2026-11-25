@@ -47,18 +47,12 @@ public partial class ConfigView : UserControl
             TrayCheck.IsChecked = st.TrayOnClose;
             NotifyCheck.IsChecked = st.NotifyWhenDone;
 
-            WatchCheck.IsChecked = st.Watch.Enabled;
-            WatchFolderText.Text = st.Watch.Folder ?? "";
-            WatchSubCheck.IsChecked = st.Watch.IncludeSubfolders;
-            WatchProfileBox.Items.Clear();
-            foreach (var p in Preset.BuiltIn.Where(p => p.Id != Preset.Meta))
-                WatchProfileBox.Items.Add(new ComboBoxItem { Content = p.TargetMb is { } mb ? $"{p.Label} ({mb} MB)" : p.Label, Tag = p.Id });
-            foreach (var prof in st.Profiles)
-                WatchProfileBox.Items.Add(new ComboBoxItem { Content = "📌 " + prof.Name, Tag = prof.Name });
-            WatchProfileBox.SelectedItem = WatchProfileBox.Items.OfType<ComboBoxItem>()
-                .FirstOrDefault(i => string.Equals(i.Tag as string, st.Watch.Profile, StringComparison.OrdinalIgnoreCase))
-                ?? WatchProfileBox.Items[0];
-            UpdateWatchStatus();
+            BuildWatches();
+            PasteCopyCheck.IsChecked = st.CopyPastedResult;
+            ThemeSystem.IsChecked = st.Theme == "sistema";
+            ThemeLight.IsChecked = st.Theme == "claro";
+            ThemeDark.IsChecked = st.Theme == "escuro";
+            UpdateCheck.IsChecked = st.CheckUpdates;
 
             BuildProfiles();
             AboutText.Text = $"Reduz Fácil para Windows, versão {AppInfo.Version}.\n" +
@@ -121,7 +115,7 @@ public partial class ConfigView : UserControl
         o.KeepDates = KeepDatesCheck.IsChecked == true;
         UpdateSuffixExample();
         _s.Save();
-        _s.RestartWatcher(); // a pasta de saída pode ter entrado/saído da pasta vigiada
+        _s.RestartWatcher(); // a pasta de saída pode ter entrado/saído de uma pasta vigiada
     }
 
     private void OnPickOutput(object sender, RoutedEventArgs e)
@@ -178,55 +172,151 @@ public partial class ConfigView : UserControl
         }
         st.TrayOnClose = TrayCheck.IsChecked == true;
         st.NotifyWhenDone = NotifyCheck.IsChecked == true;
+        st.CopyPastedResult = PasteCopyCheck.IsChecked == true;
         _s.Save();
     }
 
-    private void OnPickWatch(object sender, RoutedEventArgs e)
+    // ---------------- pastas vigiadas ----------------
+
+    private void BuildWatches()
     {
-        if (!PickFolder(WatchFolderText, "Qual pasta vigiar?")) return;
-        WatchCheck.IsChecked = true;
-        OnWatch(sender, e);
+        WatchPanel.Children.Clear();
+        var st = _s.Settings;
+        if (st.Watches.Count == 0)
+        {
+            WatchPanel.Children.Add(new TextBlock { Text = "Nenhuma pasta vigiada.", Foreground = (System.Windows.Media.Brush)FindResource("Muted") });
+            return;
+        }
+        foreach (var w in st.Watches.ToList())
+        {
+            var card = new Border
+            {
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 8, 12, 8),
+                Margin = new Thickness(0, 0, 0, 8),
+            };
+            card.SetResourceReference(Border.BorderBrushProperty, "Line");
+            var root = new StackPanel();
+
+            var top = new DockPanel();
+            var remove = new Button { Content = "Remover", Style = (Style)FindResource("DangerSmall") };
+            DockPanel.SetDock(remove, Dock.Right);
+            var on = new CheckBox { IsChecked = w.Enabled, Content = w.Folder ?? "(sem pasta)", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0) };
+            top.Children.Add(remove);
+            top.Children.Add(on);
+            root.Children.Add(top);
+
+            var line = new WrapPanel { Margin = new Thickness(22, 6, 0, 0) };
+            line.Children.Add(new TextBlock { Text = "Como reduzir:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+            var profile = new ComboBox { MinWidth = 240 };
+            foreach (var p in Preset.BuiltIn.Where(p => p.Id != Preset.Meta))
+                profile.Items.Add(new ComboBoxItem { Content = p.TargetMb is { } mb ? $"{p.Label} ({mb} MB)" : p.Label, Tag = p.Id });
+            foreach (var prof in st.Profiles)
+                profile.Items.Add(new ComboBoxItem { Content = "📌 " + prof.Name, Tag = prof.Name });
+            profile.SelectedItem = profile.Items.OfType<ComboBoxItem>()
+                .FirstOrDefault(i => string.Equals(i.Tag as string, w.Profile, StringComparison.OrdinalIgnoreCase)) ?? profile.Items[0];
+            line.Children.Add(profile);
+            var sub = new CheckBox { IsChecked = w.IncludeSubfolders, Content = "Incluir subpastas", Margin = new Thickness(16, 0, 0, 0) };
+            line.Children.Add(sub);
+            root.Children.Add(line);
+
+            var status = new TextBlock { Margin = new Thickness(22, 6, 0, 0), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 };
+            if (_s.IsWatching(w))
+            {
+                status.Text = "👁  Vigiando agora";
+                status.SetResourceReference(TextBlock.ForegroundProperty, "AccentDark");
+            }
+            else if (_s.WatchErrors.TryGetValue(w, out var err))
+            {
+                status.Text = "⚠  Não ligou: " + err;
+                status.SetResourceReference(TextBlock.ForegroundProperty, "Danger");
+            }
+            else
+            {
+                status.Text = "Desligada";
+                status.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+            }
+            root.Children.Add(status);
+            card.Child = root;
+            WatchPanel.Children.Add(card);
+
+            void Changed()
+            {
+                w.Enabled = on.IsChecked == true;
+                w.IncludeSubfolders = sub.IsChecked == true;
+                w.Profile = (profile.SelectedItem as ComboBoxItem)?.Tag as string ?? Preset.Qualidade;
+                _s.Save();
+                _s.RestartWatcher();
+            }
+            on.Checked += (_, _) => Changed();
+            on.Unchecked += (_, _) => Changed();
+            sub.Checked += (_, _) => Changed();
+            sub.Unchecked += (_, _) => Changed();
+            profile.SelectionChanged += (_, _) => Changed();
+            remove.Click += (_, _) =>
+            {
+                st.Watches.Remove(w);
+                _s.Save();
+                _s.RestartWatcher();
+            };
+        }
     }
 
-    private void OnWatch(object sender, RoutedEventArgs e)
+    private void OnAddWatch(object sender, RoutedEventArgs e)
     {
-        if (_loading) return;
-        var w = _s.Settings.Watch;
-        var folder = WatchFolderText.Text.Trim().Trim('"');
-        if (WatchCheck.IsChecked == true && string.IsNullOrWhiteSpace(folder))
+        var dlg = new OpenFolderDialog { Title = "Qual pasta vigiar?" };
+        if (dlg.ShowDialog(Window.GetWindow(this)) != true) return;
+        var folder = dlg.FolderName;
+        if (_s.Settings.Watches.Any(w => string.Equals(w.Folder, folder, StringComparison.OrdinalIgnoreCase)))
         {
-            if (!PickFolder(WatchFolderText, "Qual pasta vigiar?"))
-            {
-                _loading = true;
-                WatchCheck.IsChecked = false;
-                _loading = false;
-            }
-            folder = WatchFolderText.Text.Trim();
+            _main.Toast("Essa pasta já está na lista.");
+            return;
         }
-        w.Enabled = WatchCheck.IsChecked == true;
-        w.Folder = string.IsNullOrWhiteSpace(folder) ? null : folder;
-        w.IncludeSubfolders = WatchSubCheck.IsChecked == true;
-        w.Profile = (WatchProfileBox.SelectedItem as ComboBoxItem)?.Tag as string ?? Preset.Qualidade;
+        _s.Settings.Watches.Add(new Core.Settings.WatchSettings { Enabled = true, Folder = folder, IncludeSubfolders = true, Profile = Preset.Qualidade });
         _s.Save();
         _s.RestartWatcher();
+        _main.Toast("Pasta vigiada: os arquivos novos que chegarem nela serão reduzidos sozinhos.");
     }
 
     private void UpdateWatchStatus()
     {
-        if (_s.WatchRunning)
+        if (IsLoaded) BuildWatches();
+    }
+
+    // ---------------- tema e atualizações ----------------
+
+    private void OnTheme(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        var t = ThemeDark.IsChecked == true ? "escuro" : ThemeLight.IsChecked == true ? "claro" : "sistema";
+        _s.Settings.Theme = t;
+        _s.Save();
+        ThemeManager.Apply(t);
+    }
+
+    private void OnUpdatePref(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _s.Settings.CheckUpdates = UpdateCheck.IsChecked == true;
+        _s.Save();
+        App.Instance.StartUpdateChecks();
+    }
+
+    private async void OnCheckNow(object sender, RoutedEventArgs e)
+    {
+        CheckNowBtn.IsEnabled = false;
+        UpdateStatus.Text = "Procurando…";
+        try
         {
-            WatchStatus.Text = "👁  Vigiando agora. Arquivos que já estavam na pasta não entram; só os novos.";
-            WatchStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentDark");
+            var found = await App.Instance.CheckForUpdateAsync(manual: true);
+            UpdateStatus.Text = found
+                ? $"Versão {App.Instance.Updater.Available!.Version} disponível: use \"Atualizar\" na faixa verde lá em cima."
+                : $"Você já tem a versão mais nova ({AppInfo.Version}) — ou não deu para falar com o GitHub agora.";
         }
-        else if (_s.WatchError is { } err)
+        finally
         {
-            WatchStatus.Text = "⚠  " + err;
-            WatchStatus.Foreground = (System.Windows.Media.Brush)FindResource("Danger");
-        }
-        else
-        {
-            WatchStatus.Text = "Desligada.";
-            WatchStatus.Foreground = (System.Windows.Media.Brush)FindResource("Muted");
+            CheckNowBtn.IsEnabled = true;
         }
     }
 
@@ -246,7 +336,8 @@ public partial class ConfigView : UserControl
             del.Click += (_, _) =>
             {
                 _s.Settings.Profiles.Remove(p);
-                if (string.Equals(_s.Settings.Watch.Profile, p.Name, StringComparison.OrdinalIgnoreCase)) _s.Settings.Watch.Profile = Preset.Qualidade;
+                foreach (var w in _s.Settings.Watches.Where(w => string.Equals(w.Profile, p.Name, StringComparison.OrdinalIgnoreCase)))
+                    w.Profile = Preset.Qualidade;
                 _s.Save();
                 Reload();
                 _main.Reduzir.LoadFromSettings();

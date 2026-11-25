@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Reduz Fácil" Width="1180" Height="780" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Bg}" FontFamily="{StaticResource UiFont}" FontSize="14"
-        Foreground="{StaticResource Text}" Icon="/Assets/app.ico"
+        Background="{DynamicResource Bg}" FontFamily="{StaticResource UiFont}" FontSize="14"
+        Foreground="{DynamicResource Text}" Icon="/Assets/app.ico"
         AllowDrop="True">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -13,7 +13,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Menu lateral -->
-        <Border Background="{StaticResource Sidebar}">
+        <Border Background="{DynamicResource Sidebar}">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Top" Margin="20,24,20,24" Orientation="Horizontal">
                     <Image Source="/Assets/logo.png" Width="34" Height="34" Margin="0,0,10,0" />
@@ -27,6 +27,9 @@
                 </RadioButton>
                 <RadioButton x:Name="NavPeso" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
                     <TextBlock Text="🔍  Onde está o peso" />
+                </RadioButton>
+                <RadioButton x:Name="NavFerramentas" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
+                    <TextBlock Text="🧰  Ferramentas de PDF" />
                 </RadioButton>
                 <RadioButton x:Name="NavHistorico" DockPanel.Dock="Top" Style="{StaticResource NavButton}" GroupName="nav" Checked="OnNav">
                     <TextBlock Text="🕘  Histórico" />
@@ -44,18 +47,34 @@
         </Border>
 
         <!-- Conteúdo -->
-        <Grid Grid.Column="1">
-            <ContentControl x:Name="Host" />
-            <!-- Aviso rápido -->
-            <Border x:Name="ToastBox" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,24"
-                    Background="#1F2937" CornerRadius="10" Padding="16,10" Visibility="Collapsed">
-                <TextBlock x:Name="ToastText" Foreground="White" TextWrapping="Wrap" MaxWidth="560" />
+        <DockPanel Grid.Column="1">
+            <!-- Faixa de atualização -->
+            <Border x:Name="UpdateBar" DockPanel.Dock="Top" Background="{DynamicResource AccentSoft}" Padding="28,10" Visibility="Collapsed">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="UpdNotesBtn" Content="Ver novidades" Style="{StaticResource Small}" Click="OnUpdateNotes" />
+                        <Button x:Name="UpdLaterBtn" Content="Depois" Style="{StaticResource Small}" Click="OnUpdateLater" />
+                        <Button x:Name="UpdNowBtn" Content="Atualizar" Style="{StaticResource Primary}" Padding="14,5" Margin="8,0,0,0" Click="OnUpdateNow" />
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="UpdText" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextWrapping="Wrap" />
+                        <ProgressBar x:Name="UpdProgress" Maximum="1" Margin="0,4,16,0" Visibility="Collapsed" />
+                    </StackPanel>
+                </DockPanel>
             </Border>
-            <!-- Arrastando arquivos por cima da janela -->
-            <Border x:Name="DropOverlay" Background="#CC0E9F6E" Visibility="Collapsed" IsHitTestVisible="False">
-                <TextBlock Text="Solte para reduzir" Foreground="White" FontSize="28" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
-        </Grid>
+            <Grid>
+                <ContentControl x:Name="Host" />
+                <!-- Aviso rápido -->
+                <Border x:Name="ToastBox" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,24"
+                        Background="{DynamicResource Toast}" CornerRadius="10" Padding="16,10" Visibility="Collapsed">
+                    <TextBlock x:Name="ToastText" Foreground="{DynamicResource ToastText}" TextWrapping="Wrap" MaxWidth="560" />
+                </Border>
+                <!-- Arrastando arquivos por cima da janela -->
+                <Border x:Name="DropOverlay" Background="#CC0E9F6E" Visibility="Collapsed" IsHitTestVisible="False">
+                    <TextBlock Text="Solte para reduzir" Foreground="White" FontSize="28" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </DockPanel>
     </Grid>
 </Window>

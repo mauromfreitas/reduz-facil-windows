@@ -24,21 +24,32 @@ internal static class Ui
             WindowStartupLocation = owner is null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner,
             Owner = owner,
             ShowInTaskbar = false,
-            Background = (Brush)Application.Current.Resources["Bg"],
             FontFamily = (FontFamily)Application.Current.Resources["UiFont"],
             FontSize = 14,
         };
+        Themed(w);
         return w;
     }
 
-    public static TextBlock Text(string text, bool muted = false, double size = 14, bool bold = false) => new()
+    /// <summary>Fundo e texto da janela acompanham o tema (claro/escuro) em tempo real.</summary>
+    public static void Themed(Window w)
     {
-        Text = text,
-        TextWrapping = TextWrapping.Wrap,
-        FontSize = size,
-        FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
-        Foreground = muted ? (Brush)Application.Current.Resources["Muted"] : (Brush)Application.Current.Resources["Text"],
-    };
+        w.SetResourceReference(Window.BackgroundProperty, "Bg");
+        w.SetResourceReference(Window.ForegroundProperty, "Text");
+    }
+
+    public static TextBlock Text(string text, bool muted = false, double size = 14, bool bold = false)
+    {
+        var t = new TextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = size,
+            FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
+        };
+        t.SetResourceReference(TextBlock.ForegroundProperty, muted ? "Muted" : "Text");
+        return t;
+    }
 
     public static Button Btn(string text, bool primary = false)
     {
@@ -88,6 +99,8 @@ public sealed class VideoEditWindow : Window
     private readonly ComboBox _res = new() { MinWidth = 220 };
     private readonly CheckBox _noAudio = new() { Content = "Tirar o som" };
     private readonly CheckBox _audioOnly = new() { Content = "Extrair só o áudio (MP3)" };
+    private readonly CheckBox _split = new() { Content = "Dividir em partes de até" };
+    private readonly TextBox _splitMb = new() { Width = 60, Margin = new Thickness(8, 0, 8, 0) };
     private readonly TextBlock _error = Ui.Text("", size: 13);
     private readonly TextBlock _info = Ui.Text("Lendo o vídeo…", muted: true, size: 13);
     private readonly QueueItem _item;
@@ -103,10 +116,10 @@ public sealed class VideoEditWindow : Window
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
-        Background = (Brush)Application.Current.Resources["Bg"];
+        Ui.Themed(this);
         FontFamily = (FontFamily)Application.Current.Resources["UiFont"];
         FontSize = 14;
-        _error.Foreground = (Brush)Application.Current.Resources["Danger"];
+        _error.SetResourceReference(TextBlock.ForegroundProperty, "Danger");
 
         var o = item.Options;
         _start.Text = o.TrimStart is { } a ? Format.Duration(a) : "";
@@ -118,7 +131,11 @@ public sealed class VideoEditWindow : Window
         _res.SelectedIndex = Math.Max(0, Array.IndexOf(resValues, o.VideoMaxShortSide));
         _noAudio.IsChecked = o.RemoveAudio;
         _audioOnly.IsChecked = o.ExtractAudioOnly;
-        _audioOnly.Checked += (_, _) => _noAudio.IsChecked = false;
+        _split.IsChecked = o.SplitPartBytes is > 0;
+        // Sugestão: a meta do atalho escolhido (WhatsApp = 16 MB); sem meta, 16 MB.
+        _splitMb.Text = Format.Number((o.SplitPartBytes ?? o.TargetBytes ?? 16L * 1024 * 1024) / 1024.0 / 1024.0);
+        _split.Checked += (_, _) => _audioOnly.IsChecked = false;
+        _audioOnly.Checked += (_, _) => { _noAudio.IsChecked = false; _split.IsChecked = false; };
         _noAudio.Checked += (_, _) => _audioOnly.IsChecked = false;
 
         var root = new StackPanel { Margin = new Thickness(20) };
@@ -138,6 +155,13 @@ public sealed class VideoEditWindow : Window
         root.Children.Add(_rotate);
         root.Children.Add(Section("Resolução máxima"));
         root.Children.Add(_res);
+        root.Children.Add(Section("Dividir (vídeo longo para o WhatsApp)"));
+        var split = new StackPanel { Orientation = Orientation.Horizontal };
+        split.Children.Add(_split);
+        split.Children.Add(_splitMb);
+        split.Children.Add(new TextBlock { Text = "MB cada", VerticalAlignment = VerticalAlignment.Center });
+        root.Children.Add(split);
+        root.Children.Add(Ui.Text("O app escolhe quantas partes para cada uma ficar nítida dentro do tamanho.", muted: true, size: 12.5));
         root.Children.Add(Section("Som"));
         root.Children.Add(_noAudio);
         root.Children.Add(_audioOnly);
@@ -154,7 +178,7 @@ public sealed class VideoEditWindow : Window
             _start.Text = _end.Text = "";
             _rotate.SelectedIndex = 0;
             _res.SelectedIndex = 0;
-            _noAudio.IsChecked = _audioOnly.IsChecked = false;
+            _noAudio.IsChecked = _audioOnly.IsChecked = _split.IsChecked = false;
         };
         root.Children.Add(Ui.Buttons(clear, cancel, ok));
         Content = root;
@@ -192,7 +216,18 @@ public sealed class VideoEditWindow : Window
             _error.Text = "O fim precisa ser depois do início.";
             return;
         }
+        long? split = null;
+        if (_split.IsChecked == true)
+        {
+            if (!Format.TryParseNumber(_splitMb.Text, out var mb) || mb < 1 || mb > 4000)
+            {
+                _error.Text = "Tamanho das partes inválido (use de 1 a 4000 MB).";
+                return;
+            }
+            split = (long)(mb * 1024 * 1024);
+        }
         var o = _item.Options.Clone();
+        o.SplitPartBytes = split;
         o.TrimStart = start is { TotalSeconds: > 0 } ? start : null;
         o.TrimEnd = end;
         o.Rotate = _rotate.SelectedIndex switch { 1 => 90, 2 => 180, 3 => 270, _ => 0 };
@@ -224,9 +259,10 @@ public sealed class CompareWindow : Window
         Width = 1200;
         Height = 760;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        Background = (Brush)Application.Current.Resources["Bg"];
+        Ui.Themed(this);
         FontFamily = (FontFamily)Application.Current.Resources["UiFont"];
         FontSize = 14;
+        _zoom.SetResourceReference(ForegroundProperty, "Text");
 
         _lsv = Viewer(_left);
         _rsv = Viewer(_right);
@@ -269,13 +305,17 @@ public sealed class CompareWindow : Window
         Loaded += async (_, _) => await LoadAsync(s, input, options, output);
     }
 
-    private static ScrollViewer Viewer(Image img) => new()
+    private static ScrollViewer Viewer(Image img)
     {
-        Content = img,
-        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-        VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
-        Background = new SolidColorBrush(Color.FromRgb(0xE5, 0xE7, 0xEB)),
-    };
+        var sv = new ScrollViewer
+        {
+            Content = img,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+        };
+        sv.SetResourceReference(BackgroundProperty, "Viewer");
+        return sv;
+    }
 
     private static Border Frame(UIElement child) => new()
     {
@@ -327,7 +367,7 @@ public sealed class CompareWindow : Window
         catch (Exception ex)
         {
             _status.Text = JobQueue.Friendly(ex);
-            _status.Foreground = (Brush)Application.Current.Resources["Danger"];
+            _status.SetResourceReference(TextBlock.ForegroundProperty, "Danger");
         }
     }
 

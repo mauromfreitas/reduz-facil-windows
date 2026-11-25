@@ -16,6 +16,13 @@ public static class Program
     {
         var smoke = SmokeOptions.Parse(args);
 
+        // Aberto pela versão anterior depois de uma atualização: espera ela fechar de vez.
+        var waitIdx = Array.FindIndex(args, a => a.Equals("--esperar-pid", StringComparison.OrdinalIgnoreCase));
+        if (waitIdx >= 0 && waitIdx + 1 < args.Length && int.TryParse(args[waitIdx + 1], out var pid))
+        {
+            try { System.Diagnostics.Process.GetProcessById(pid).WaitForExit(30_000); } catch { /* já fechou */ }
+        }
+
         // 1. Uma instância por vez: as próximas aberturas mandam os arquivos para a que está aberta.
         var instance = SingleInstance.TryAcquire();
         if (instance is null)
@@ -44,6 +51,7 @@ public static class Program
             Log.Init(data.LogsDir);
             Log.Info($"Iniciando Reduz Fácil v{AppInfo.Version} em {data.ExeDir}");
             DataFolder.CleanWork(data);
+            AppUpdater.CleanupLeftovers();
 
             // 3. Motores e DLLs nativas do WPF em ReduzFacil-dados\engine\.
             EngineInfo engine;
@@ -96,8 +104,9 @@ public static class Program
 /// Teste automático do build (GitHub Actions): --teste-auto PASTA_AMOSTRAS --capturas PASTA.
 /// O app abre, reduz as amostras, passa por todas as telas tirando capturas e fecha.
 /// --teste-espera N: abre normalmente e fecha sozinho depois de N segundos sem trabalho (teste da 2ª abertura).
+/// --teste-atualizar ARQUIVO: instala ARQUIVO como se fosse uma versão nova e reabre (teste da atualização).
 /// </summary>
-public sealed record SmokeOptions(string? Samples, string? ShotsDir, int? WaitSeconds)
+public sealed record SmokeOptions(string? Samples, string? ShotsDir, int? WaitSeconds, string? UpdateFrom = null)
 {
     public static SmokeOptions? Parse(string[] args)
     {
@@ -108,7 +117,8 @@ public sealed record SmokeOptions(string? Samples, string? ShotsDir, int? WaitSe
         }
         var samples = Arg("--teste-auto");
         var wait = int.TryParse(Arg("--teste-espera"), out var w) ? w : (int?)null;
-        if (samples is null && wait is null) return null;
-        return new SmokeOptions(samples, Arg("--capturas"), wait);
+        var update = Arg("--teste-atualizar");
+        if (samples is null && wait is null && update is null) return null;
+        return new SmokeOptions(samples, Arg("--capturas"), wait, update);
     }
 }

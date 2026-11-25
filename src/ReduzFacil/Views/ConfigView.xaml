@@ -19,7 +19,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                         <TextBlock Text="Final do nome" Style="{StaticResource FieldLabel}" Width="120" />
                         <TextBox x:Name="SuffixText" Width="140" LostFocus="OnOutput" />
-                        <TextBlock x:Name="SuffixExample" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                        <TextBlock x:Name="SuffixExample" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                     </StackPanel>
                     <CheckBox x:Name="KeepDatesCheck" Content="O arquivo novo fica com a data do original (fotos continuam em ordem)" Margin="0,10,0,0" Checked="OnOutput" Unchecked="OnOutput" />
                     <TextBlock Text="O original nunca é apagado nem substituído." Style="{StaticResource MutedText}" Margin="0,6,0,0" />
@@ -53,30 +53,39 @@
                     <TextBlock Text="Windows" Style="{StaticResource H2}" />
                     <CheckBox x:Name="ShellCheck" Content="Botão direito do Explorer: &quot;Reduzir com Reduz Fácil&quot; (com os atalhos WhatsApp, e-mail…)" Checked="OnWindows" Unchecked="OnWindows" />
                     <TextBlock Text="No Windows 11 ele aparece em &quot;Mostrar mais opções&quot;. Fica só no seu usuário e some quando desligar." Style="{StaticResource MutedText}" Margin="22,0,0,6" />
-                    <CheckBox x:Name="StartupCheck" Content="Iniciar com o Windows (perto do relógio, para a pasta vigiada)" Checked="OnWindows" Unchecked="OnWindows" />
-                    <CheckBox x:Name="TrayCheck" Content="Ao fechar a janela, continuar perto do relógio se a pasta vigiada estiver ligada" Checked="OnWindows" Unchecked="OnWindows" />
+                    <CheckBox x:Name="StartupCheck" Content="Iniciar com o Windows (perto do relógio, para as pastas vigiadas)" Checked="OnWindows" Unchecked="OnWindows" />
+                    <CheckBox x:Name="TrayCheck" Content="Ao fechar a janela, continuar perto do relógio se houver pasta vigiada ligada" Checked="OnWindows" Unchecked="OnWindows" />
                     <CheckBox x:Name="NotifyCheck" Content="Avisar quando terminar (se a janela estiver em segundo plano)" Checked="OnWindows" Unchecked="OnWindows" />
+                    <CheckBox x:Name="PasteCopyCheck" Content="Ctrl+V de um print: quando ficar pronto, já copiar o resultado (para colar no WhatsApp)" Checked="OnWindows" Unchecked="OnWindows" />
                 </StackPanel>
             </Border>
 
-            <!-- Pasta vigiada -->
+            <!-- Pastas vigiadas -->
             <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
-                    <TextBlock Text="Pasta vigiada" Style="{StaticResource H2}" />
-                    <TextBlock Text="Tudo o que chegar nessa pasta (fotos do WhatsApp, downloads, cópias do celular) é reduzido sozinho."
-                               Style="{StaticResource MutedText}" Margin="0,0,0,8" />
-                    <CheckBox x:Name="WatchCheck" Content="Ligada" Checked="OnWatch" Unchecked="OnWatch" />
-                    <DockPanel Margin="0,6,0,0">
-                        <TextBlock Text="Pasta" Style="{StaticResource FieldLabel}" Width="120" />
-                        <Button DockPanel.Dock="Right" Content="Escolher…" Style="{StaticResource Small}" Click="OnPickWatch" />
-                        <TextBox x:Name="WatchFolderText" LostFocus="OnWatch" />
-                    </DockPanel>
+                    <TextBlock Text="Pastas vigiadas" Style="{StaticResource H2}" />
+                    <TextBlock Text="Tudo o que chegar nessas pastas (fotos do WhatsApp, downloads, cópias do celular) é reduzido sozinho. Cada pasta pode ter o seu jeito de reduzir. Só os arquivos novos entram."
+                               Style="{StaticResource MutedText}" Margin="0,0,0,10" />
+                    <StackPanel x:Name="WatchPanel" />
+                    <Button Content="+ Adicionar pasta…" Style="{StaticResource Small}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OnAddWatch" />
+                </StackPanel>
+            </Border>
+
+            <!-- Aparência e atualizações -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Aparência e atualizações" Style="{StaticResource H2}" />
+                    <WrapPanel>
+                        <TextBlock Text="Tema" Style="{StaticResource FieldLabel}" Width="120" Margin="0,0,0,8" />
+                        <RadioButton x:Name="ThemeSystem" Style="{StaticResource Chip}" GroupName="theme" Content="Igual ao Windows" Checked="OnTheme" />
+                        <RadioButton x:Name="ThemeLight" Style="{StaticResource Chip}" GroupName="theme" Content="Claro" Checked="OnTheme" />
+                        <RadioButton x:Name="ThemeDark" Style="{StaticResource Chip}" GroupName="theme" Content="Escuro" Checked="OnTheme" />
+                    </WrapPanel>
+                    <CheckBox x:Name="UpdateCheck" Content="Procurar atualizações sozinho (ao abrir e uma vez por dia)" Margin="0,8,0,0" Checked="OnUpdatePref" Unchecked="OnUpdatePref" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <TextBlock Text="Como reduzir" Style="{StaticResource FieldLabel}" Width="120" />
-                        <ComboBox x:Name="WatchProfileBox" MinWidth="260" SelectionChanged="OnWatch" />
+                        <Button x:Name="CheckNowBtn" Content="Procurar agora" Style="{StaticResource Small}" Margin="0" Click="OnCheckNow" />
+                        <TextBlock x:Name="UpdateStatus" Margin="12,0,0,0" VerticalAlignment="Center" Style="{StaticResource MutedText}" />
                     </StackPanel>
-                    <CheckBox x:Name="WatchSubCheck" Content="Incluir subpastas" Margin="0,8,0,0" Checked="OnWatch" Unchecked="OnWatch" />
-                    <TextBlock x:Name="WatchStatus" Margin="0,8,0,0" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 

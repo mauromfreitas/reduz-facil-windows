@@ -4,6 +4,7 @@
 #    testa meta + corte, menu do Explorer, pasta vigiada e pausa.
 # 2. Segunda abertura: com o app aberto, abrir o .exe de novo com um arquivo (como o botão direito do
 #    Explorer faz) manda o arquivo para a instância aberta, que reduz com o atalho pedido.
+# 3. Atualização: troca o .exe "aberto" por outro, reabre e apaga o antigo.
 param(
     [Parameter(Mandatory)] [string] $Exe,
     [Parameter(Mandatory)] [string] $Amostras
@@ -57,7 +58,24 @@ $tail = LogLines | Select-Object -Skip $before
 $tail -match 'TESTE recebido' | ForEach-Object { Write-Host $_ }
 if (-not ($tail -match "TESTE recebido: $([regex]::Escape($photo.Name)) Done origem=ShellMenu")) { Fail "a foto mandada pela segunda abertura não foi reduzida" }
 
-# ---------- 3. conferências gerais ----------
+# ---------- 3. atualização com um clique (troca do .exe e reabertura) ----------
+$before = (LogLines).Count
+$newExe = (Resolve-Path $Exe).Path
+$up = Start-Process $app -ArgumentList @('--teste-atualizar', "`"$newExe`"") -PassThru
+if (-not $up.WaitForExit(60000)) { $up.Kill(); Fail "atualização: a versão antiga não fechou" }
+$until = (Get-Date).AddSeconds(120)
+do {
+    Start-Sleep -Seconds 1
+    $tail = LogLines | Select-Object -Skip $before
+    $done = ($tail -match 'Atualizado: de') -and (@($tail -match 'TESTE OK').Count -ge 2)
+} while (-not $done -and (Get-Date) -lt $until)
+$tail -match 'Atualiza|TESTE atualizar' | ForEach-Object { Write-Host $_ }
+if (-not $done) { Fail "atualização: a versão nova não abriu" }
+Start-Sleep -Seconds 3
+if (Test-Path "$app.antigo") { Fail "atualização: sobrou o ReduzFacil.exe.antigo" }
+if (-not (Test-Path $app)) { Fail "atualização: o ReduzFacil.exe sumiu" }
+
+# ---------- 4. conferências gerais ----------
 $engine = Get-ChildItem (Join-Path $data 'engine') -Recurse -File | Measure-Object Length -Sum
 Write-Host ("::notice title=arquivos::motores: {0} arquivos, {1:N0} MB" -f $engine.Count, ($engine.Sum / 1MB))
 if (Get-ChildItem $env:TEMP -Directory -Filter '.net' -ErrorAction SilentlyContinue) { Fail 'Existe %TEMP%\.net (algo extraiu na pasta temporária)' }

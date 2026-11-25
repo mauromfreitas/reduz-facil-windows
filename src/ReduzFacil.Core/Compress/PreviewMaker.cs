@@ -128,7 +128,14 @@ public sealed class PreviewMaker(CompressContext ctx)
         clip.TrimStart = TimeSpan.FromSeconds(clipStart);
         clip.TrimEnd = TimeSpan.FromSeconds(clipStart + clipLen);
         clip.ExtractAudioOnly = false;
-        if (o.TargetBytes is { } t && o.HasVideoEdits is false && original <= t) clip.TargetBytes = null;
+        clip.SplitPartBytes = null;
+        if (o.SplitPartBytes is { } part)
+        {
+            // Dividido: o trecho ganha a mesma "taxa" de uma parte.
+            var n = Compressor.PartsFor(info, o, dur, part);
+            clip.TargetBytes = Math.Max(1, (long)(part * clipLen / (dur / n)));
+        }
+        else if (o.TargetBytes is { } t && o.HasVideoEdits is false && original <= t) clip.TargetBytes = null;
         else if (o.TargetBytes is { } t2) clip.TargetBytes = Math.Max(1, (long)(t2 * clipLen / dur));
         var r = await new Compressor(ctx).RunAsync(input, clip, TempOut(dir), null, null, ct).ConfigureAwait(false);
         var after = Path.Combine(dir, "depois.png");

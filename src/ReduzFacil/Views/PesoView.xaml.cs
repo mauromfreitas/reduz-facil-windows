@@ -14,6 +14,7 @@ public partial class PesoView : UserControl
     private readonly AppServices _s;
     private readonly MainWindow _main;
     private readonly ObservableCollection<HitVm> _hits = [];
+    private readonly ObservableCollection<DupGroupVm> _dups = [];
     private CancellationTokenSource? _cts;
     private bool _bulk;
 
@@ -23,6 +24,7 @@ public partial class PesoView : UserControl
         _main = main;
         InitializeComponent();
         HitList.ItemsSource = _hits;
+        DupList.ItemsSource = _dups;
         FolderText.Text = _s.Settings.ScanLastFolder ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         MinText.Text = Format.Number(_s.Settings.ScanMinMb);
         BuildQuick();
@@ -83,7 +85,8 @@ public partial class PesoView : UserControl
         _s.Settings.ScanLastFolder = folder;
         _s.Settings.ScanMinMb = minMb;
         _s.Save();
-        await ScanAsync(folder, minMb);
+        if (ModeDup.IsChecked == true) await FindDuplicatesAsync(folder, SimilarCheck.IsChecked == true);
+        else await ScanAsync(folder, minMb);
     }
 
     /// <summary>Também usado pelo teste automático.</summary>
@@ -208,5 +211,124 @@ public partial class PesoView : UserControl
         Log.Info($"{n} originais enviados para a Lixeira");
         _main.Toast($"{n} original(is) na Lixeira.");
         UpdateSelection();
+    }
+
+    // ---------------- repetidos ----------------
+
+    private void OnMode(object sender, RoutedEventArgs e)
+    {
+        if (DupList is null || HitList is null) return; // durante o InitializeComponent
+        var dup = ModeDup.IsChecked == true;
+        HitList.Visibility = HeavyFooter.Visibility = MinRow.Visibility = dup ? Visibility.Collapsed : Visibility.Visible;
+        DupList.Visibility = DupFooter.Visibility = SimilarCheck.Visibility = dup ? Visibility.Visible : Visibility.Collapsed;
+        Status.Text = "";
+    }
+
+    public void ShowDuplicatesMode() => ModeDup.IsChecked = true;
+
+    /// <summary>Também usado pelo teste automático.</summary>
+    public async Task FindDuplicatesAsync(string folder, bool similar)
+    {
+        _dups.Clear();
+        UpdateDupSelection();
+        _cts = new CancellationTokenSource();
+        ScanBtn.Content = "Parar";
+        Status.Text = "Procurando repetidos…";
+        var progress = new Progress<DupProgress>(p =>
+            Status.Text = p.Total > 0 ? $"{p.Stage}… {p.Done:N0} de {p.Total:N0}" : $"{p.Stage}… {p.Done:N0} arquivos");
+        try
+        {
+            var finder = new DuplicateFinder(_s.Tools);
+            var token = _cts.Token;
+            var groups = await Task.Run(() => finder.FindAsync(folder, similar, progress, token));
+            foreach (var g in groups) _dups.Add(new DupGroupVm(g, UpdateDupSelection));
+            var exact = groups.Where(g => g.Exact).ToList();
+            var sim = groups.Count - exact.Count;
+            Status.Text = groups.Count == 0
+                ? "Nenhum repetido encontrado."
+                : $"{exact.Count} grupo(s) de idênticos (libera ~{Format.Bytes(exact.Sum(g => g.Wasted))})" +
+                  (sim > 0 ? $" e {sim} grupo(s) de fotos parecidas para conferir." : ".");
+        }
+        catch (OperationCanceledException)
+        {
+            Status.Text = "Busca interrompida.";
+        }
+        catch (Exception ex)
+        {
+            Status.Text = "Erro na busca: " + ex.Message;
+            Log.Error("Erro em Repetidos", ex);
+        }
+        finally
+        {
+            _cts?.Dispose();
+            _cts = null;
+            ScanBtn.Content = "Procurar";
+            UpdateDupSelection();
+        }
+    }
+
+    private void UpdateDupSelection()
+    {
+        var sel = _dups.SelectMany(g => g.Files).Where(f => f.Selected).ToList();
+        DupSelText.Text = _dups.Count == 0 ? "" : $"{sel.Count} marcado(s) para a Lixeira · {Format.Bytes(sel.Sum(f => f.File.SizeBytes))}";
+        DupRecycleBtn.IsEnabled = sel.Count > 0;
+    }
+
+    private void OnDupSuggested(object sender, RoutedEventArgs e)
+    {
+        foreach (var g in _dups)
+            foreach (var f in g.Files)
+                f.SetSelectedSilently(g.Group.Exact && !f.File.Keep);
+        UpdateDupSelection();
+    }
+
+    private void OnDupNone(object sender, RoutedEventArgs e)
+    {
+        foreach (var f in _dups.SelectMany(g => g.Files)) f.SetSelectedSilently(false);
+        UpdateDupSelection();
+    }
+
+    private static DupFileVm? DupVm(object sender) => (sender as FrameworkElement)?.Tag as DupFileVm;
+
+    private void OnDupOpen(object sender, RoutedEventArgs e)
+    {
+        if (DupVm(sender) is { } f) Explorer.Open(f.File.Path);
+    }
+
+    private void OnDupFolder(object sender, RoutedEventArgs e)
+    {
+        if (DupVm(sender) is { } f) Explorer.ShowInFolder(f.File.Path);
+    }
+
+    private void OnDupRecycle(object sender, RoutedEventArgs e)
+    {
+        // Segurança: de cada grupo, pelo menos um arquivo fica.
+        var allMarked = _dups.Where(g => g.Files.All(f => f.Selected)).ToList();
+        if (allMarked.Count > 0)
+        {
+            MessageBox.Show(Window.GetWindow(this),
+                $"Em {allMarked.Count} grupo(s) todos os arquivos estão marcados. Deixe pelo menos um de cada grupo desmarcado (é o que fica).",
+                "Repetidos", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        var sel = _dups.SelectMany(g => g.Files.Select(f => (g, f))).Where(x => x.f.Selected).ToList();
+        if (sel.Count == 0) return;
+        var similar = sel.Count(x => !x.g.Group.Exact);
+        var msg = $"Mandar {sel.Count} arquivo(s) ({Format.Bytes(sel.Sum(x => x.f.File.SizeBytes))}) para a Lixeira?\n\n" +
+                  (similar > 0 ? $"Atenção: {similar} são fotos PARECIDAS, não idênticas. Confira se não há diferença que importe.\n\n" : "") +
+                  "Dá para restaurar pela Lixeira do Windows (arquivos de pen drive ou rede podem ser apagados de vez — o Windows avisa antes).";
+        if (MessageBox.Show(Window.GetWindow(this), msg, "Repetidos", MessageBoxButton.YesNo,
+                similar > 0 ? MessageBoxImage.Warning : MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        var n = RecycleBin.Send(sel.Select(x => x.f.File.Path));
+        Log.Info($"Repetidos: {n} arquivo(s) para a Lixeira");
+        // Some com o que foi para a Lixeira; grupo que ficou com 1 arquivo some também.
+        foreach (var g in _dups.ToList())
+        {
+            g.Files.RemoveAll(f => !File.Exists(f.File.Path));
+            if (g.Files.Count < 2) _dups.Remove(g);
+        }
+        DupList.Items.Refresh();
+        _main.Toast($"{n} arquivo(s) na Lixeira.");
+        UpdateDupSelection();
     }
 }

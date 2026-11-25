@@ -12,22 +12,28 @@
 
         <StackPanel Margin="0,0,0,14">
             <TextBlock Text="Onde está o peso" Style="{StaticResource H1}" />
-            <TextBlock Text="Procura numa pasta ou disco as fotos, vídeos, áudios e PDFs que mais ocupam espaço e mostra quanto daria para economizar. Nada é alterado só por procurar."
+            <TextBlock Text="Procura numa pasta ou disco o que mais ocupa espaço: arquivos pesados que dá para reduzir e arquivos repetidos. Nada é alterado só por procurar."
                        Style="{StaticResource MutedText}" />
         </StackPanel>
 
         <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="18,14">
             <StackPanel>
+                <WrapPanel Margin="0,0,0,10">
+                    <RadioButton x:Name="ModeHeavy" Style="{StaticResource Chip}" GroupName="pesomode" Content="Arquivos pesados" IsChecked="True" Checked="OnMode" />
+                    <RadioButton x:Name="ModeDup" Style="{StaticResource Chip}" GroupName="pesomode" Content="Repetidos" Checked="OnMode" />
+                </WrapPanel>
                 <DockPanel>
                     <Button DockPanel.Dock="Right" x:Name="ScanBtn" Content="Procurar" Style="{StaticResource Primary}" Click="OnScan" Margin="8,0,0,0" />
                     <Button DockPanel.Dock="Right" Content="Escolher pasta…" Click="OnPick" Margin="8,0,0,0" />
                     <TextBox x:Name="FolderText" FontSize="14" />
                 </DockPanel>
                 <WrapPanel x:Name="QuickPanel" Margin="0,10,0,0" />
-                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                    <TextBlock Text="Só arquivos a partir de" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                <CheckBox x:Name="SimilarCheck" Margin="0,6,0,0" IsChecked="True" Visibility="Collapsed"
+                          Content="Incluir fotos parecidas (sequências, a mesma foto em tamanhos diferentes) — confira antes de apagar" />
+                <StackPanel x:Name="MinRow" Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="Só arquivos a partir de" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                     <TextBox x:Name="MinText" Width="60" Margin="8,0" />
-                    <TextBlock Text="MB · estimativa no nível escolhido em Reduzir" VerticalAlignment="Center" Foreground="{StaticResource Muted}" />
+                    <TextBlock Text="MB · estimativa no nível escolhido em Reduzir" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" />
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -50,7 +56,7 @@
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="10" Padding="10,8" ToolTip="{Binding Hit.Path}">
+                    <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="10" Padding="10,8" ToolTip="{Binding Hit.Path}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="30" />
@@ -65,15 +71,15 @@
                             </Border>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
                                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Folder}" Foreground="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding State}" Foreground="{StaticResource AccentDark}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Folder}" Foreground="{DynamicResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding State}" Foreground="{DynamicResource AccentDark}" FontSize="12" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
-                            <TextBlock Grid.Column="3" Text="{Binding Detail}" Foreground="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" />
+                            <TextBlock Grid.Column="3" Text="{Binding Detail}" Foreground="{DynamicResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" />
                             <StackPanel Grid.Column="4" MinWidth="170" VerticalAlignment="Center">
                                 <TextBlock HorizontalAlignment="Right" FontSize="13">
                                     <Run Text="{Binding Size, Mode=OneWay}" /><Run Text=" → " /><Run Text="{Binding Estimate, Mode=OneWay}" />
                                 </TextBlock>
-                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{StaticResource AccentDark}" />
+                                <TextBlock Text="{Binding Saving}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="{DynamicResource AccentDark}" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -81,7 +87,68 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <Grid Grid.Row="4" Margin="0,8,0,0">
+        <!-- Repetidos -->
+        <ListBox Grid.Row="3" x:Name="DupList" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" Visibility="Collapsed"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Margin" Value="0,0,0,10" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{DynamicResource Card}" BorderBrush="{Binding Frame}" BorderThickness="1" CornerRadius="10" Padding="12,10">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{Binding TitleBrush}" />
+                            <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,0,0,6" TextWrapping="Wrap" />
+                            <ItemsControl ItemsSource="{Binding Files}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="30" />
+                                                <ColumnDefinition Width="70" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding Selected, Mode=TwoWay}" VerticalAlignment="Center" ToolTip="Marcado = vai para a Lixeira" />
+                                            <Border Grid.Column="1" Width="60" Height="44" CornerRadius="6" Background="{Binding Tint}" HorizontalAlignment="Left" ClipToBounds="True">
+                                                <Grid>
+                                                    <TextBlock Text="{Binding Glyph}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe UI Emoji" />
+                                                    <Image Source="{Binding Thumb}" Stretch="UniformToFill" />
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Folder}" Foreground="{DynamicResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,0,12,0" MinWidth="170">
+                                                <TextBlock Text="{Binding Size}" HorizontalAlignment="Right" FontSize="13" />
+                                                <TextBlock Text="{Binding KeepLabel}" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource AccentDark}" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="Abrir" Style="{StaticResource Small}" Tag="{Binding}" Click="OnDupOpen" />
+                                                <Button Content="Pasta" Style="{StaticResource Small}" Tag="{Binding}" Click="OnDupFolder" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="4" x:Name="HeavyFooter" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -93,6 +160,18 @@
                 <Button x:Name="ReduceBtn" Content="Reduzir selecionados" Style="{StaticResource Primary}" Click="OnReduce" />
                 <Button x:Name="RecycleBtn" Content="Originais para a Lixeira…" Click="OnRecycle" Margin="0"
                         ToolTip="Depois de reduzir, libera o espaço mandando os originais para a Lixeira (dá para restaurar)." />
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="4" x:Name="DupFooter" Margin="0,8,0,0" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="DupSelText" VerticalAlignment="Center" Style="{StaticResource MutedText}" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Sugeridos" Click="OnDupSuggested" ToolTip="Marca as cópias idênticas (deixa um de cada). Parecidas ficam desmarcadas." />
+                <Button Content="Nenhum" Click="OnDupNone" />
+                <Button x:Name="DupRecycleBtn" Content="Marcados para a Lixeira…" Style="{StaticResource Primary}" Click="OnDupRecycle" Margin="0" />
             </StackPanel>
         </Grid>
     </Grid>

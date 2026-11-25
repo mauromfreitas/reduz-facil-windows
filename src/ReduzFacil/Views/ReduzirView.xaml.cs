@@ -57,6 +57,7 @@ public partial class ReduzirView : UserControl
             SelectByTag(ImgSizeBox, o.ImageMaxSide);
             PrivacyCheck.IsChecked = o.RemoveMetadata;
             AutoStartCheck.IsChecked = st.AutoStart;
+            SplitCheck.IsChecked = st.SplitVideos;
             UpdatePresetUi();
         }
         finally
@@ -141,7 +142,15 @@ public partial class ReduzirView : UserControl
         var p = Preset.Find(_s.Settings.PresetId) ?? Preset.BuiltIn[0];
         PresetHint.Text = p.Hint + (p.TargetMb is not null ? ". Arquivos que já cabem são só otimizados." : "");
         MetaBox.Visibility = p.Id == Preset.Meta ? Visibility.Visible : Visibility.Collapsed;
+        SplitCheck.Visibility = p.TargetMb is not null || p.Id == Preset.Meta ? Visibility.Visible : Visibility.Collapsed;
         LevelRow.Visibility = p.ConvertOnly ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnSplit(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        _s.Settings.SplitVideos = SplitCheck.IsChecked == true;
+        _s.Save();
     }
 
     private void OnLevel(object sender, RoutedEventArgs e)
@@ -296,6 +305,15 @@ public partial class ReduzirView : UserControl
     private void OnFolder(object sender, RoutedEventArgs e)
     {
         if (Vm(sender)?.Item.Result?.OutputPath is { } p) Explorer.ShowInFolder(p);
+    }
+
+    private void OnCopy(object sender, RoutedEventArgs e)
+    {
+        if (Vm(sender)?.Item.Result is not { } r) return;
+        var files = r.AllOutputs.ToList();
+        _main.Toast(MainWindow.CopyFiles(files)
+            ? files.Count == 1 ? "Copiado! É só colar (Ctrl+V) no WhatsApp, e-mail ou onde quiser." : $"{files.Count} partes copiadas! É só colar."
+            : "Não consegui copiar (o arquivo sumiu?).");
     }
 
     private void OnCompare(object sender, RoutedEventArgs e)

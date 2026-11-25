@@ -26,11 +26,17 @@ O arquivo reduzido é salvo ao lado do original com `-reduzido` no nome (ou numa
 | **PDF** | Recomprime as imagens (ótimo para escaneados), mantém o texto como texto. Opção de tons de cinza. PDF com senha dá aviso claro. |
 | **Antes e depois** | Compara lado a lado (com zoom 100%) a foto, um quadro do vídeo ou a 1ª página do PDF antes de salvar. |
 | **Onde está o peso** | Varre uma pasta ou disco, lista os arquivos que mais economizariam, reduz os selecionados e, se você quiser, manda os originais para a **Lixeira** (dá para restaurar). |
-| **Pasta vigiada** | Tudo o que chegar numa pasta (ex.: Downloads, fotos do WhatsApp) é reduzido sozinho, só depois de terminar de copiar. |
+| **Pastas vigiadas** | Várias pastas, cada uma com seu perfil. Tudo o que chegar nelas (ex.: Downloads, fotos do WhatsApp) é reduzido sozinho, só depois de terminar de copiar. |
 | **Botão direito do Explorer** | "Reduzir com Reduz Fácil" com os atalhos (WhatsApp, e-mail…), para arquivos e pastas. No Windows 11 fica em "Mostrar mais opções". |
 | **Perfis** | Salve combinações de ajustes (ex.: "Fotos da família") e use também na pasta vigiada. |
 | **Fila** | Vídeos e demais arquivos em pistas separadas, vários ao mesmo tempo, pausar/continuar, cancelar, tentar de novo. Motores em prioridade baixa (o PC continua respondendo). |
 | **Histórico** | Últimos 1.000 arquivos e o total economizado desde sempre. |
+| **Repetidos** | Em "Onde está o peso": arquivos idênticos e fotos parecidas (com aviso), para a Lixeira deixando sempre um de cada. |
+| **Dividir vídeo** | Vídeo longo em partes do tamanho da meta (ex.: 16 MB para o WhatsApp). |
+| **Colar e copiar** | Ctrl+V cola arquivos e prints na fila; o botão Copiar põe o resultado na área de transferência. |
+| **Ferramentas de PDF** | Juntar fotos num PDF (A4 ou tamanho da foto) e separar páginas. |
+| **Atualização** | Avisa quando há versão nova e atualiza com um clique, mantendo configurações e histórico. |
+| **Tema** | Claro, escuro ou igual ao Windows. |
 
 ## Pasta de dados
 
@@ -42,6 +48,9 @@ ReduzFacil-dados\
   logs\app.log   registro
   configuracoes.json, historico.json, totais.json
 ```
+
+Atualizar: quando houver versão nova, aparece uma faixa verde no topo — clique em **Atualizar**. O app baixa,
+troca o próprio .exe (o nome do arquivo continua o mesmo) e reabre.
 
 Mover o .exe para outra pasta? Leve a `ReduzFacil-dados` junto para manter as configurações. O menu do
 botão direito e o "Iniciar com o Windows" se corrigem sozinhos na próxima abertura.
